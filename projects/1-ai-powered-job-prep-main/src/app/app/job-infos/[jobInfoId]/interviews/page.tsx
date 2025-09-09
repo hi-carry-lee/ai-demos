@@ -1,31 +1,31 @@
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { db } from "@/drizzle/db"
-import { InterviewTable } from "@/drizzle/schema"
-import { getInterviewJobInfoTag } from "@/features/interviews/dbCache"
-import { JobInfoBackLink } from "@/features/jobInfos/components/JobInfoBackLink"
-import { getJobInfoIdTag } from "@/features/jobInfos/dbCache"
-import { formatDateTime } from "@/lib/formatters"
-import { getCurrentUser } from "@/services/clerk/lib/getCurrentUser"
-import { and, desc, eq, isNotNull } from "drizzle-orm"
-import { ArrowRightIcon, Loader2Icon, PlusIcon } from "lucide-react"
-import { cacheTag } from "next/dist/server/use-cache/cache-tag"
-import Link from "next/link"
-import { redirect } from "next/navigation"
-import { Suspense } from "react"
+} from "@/components/ui/card";
+import { db } from "@/drizzle/db";
+import { InterviewTable } from "@/drizzle/schema";
+import { getInterviewJobInfoTag } from "@/features/interviews/dbCache";
+import { JobInfoBackLink } from "@/features/jobInfos/components/JobInfoBackLink";
+import { getJobInfoIdTag } from "@/features/jobInfos/dbCache";
+import { formatDateTime } from "@/lib/formatters";
+import { getCurrentUser } from "@/services/clerk/lib/getCurrentUser";
+import { and, desc, eq, isNotNull } from "drizzle-orm";
+import { ArrowRightIcon, Loader2Icon, PlusIcon } from "lucide-react";
+import { cacheTag } from "next/dist/server/use-cache/cache-tag";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { Suspense } from "react";
 
 export default async function InterviewsPage({
   params,
 }: {
-  params: Promise<{ jobInfoId: string }>
+  params: Promise<{ jobInfoId: string }>;
 }) {
-  const { jobInfoId } = await params
+  const { jobInfoId } = await params;
 
   return (
     <div className="container py-4 gap-4 h-screen-header flex flex-col items-start">
@@ -37,17 +37,20 @@ export default async function InterviewsPage({
         <SuspendedPage jobInfoId={jobInfoId} />
       </Suspense>
     </div>
-  )
+  );
 }
 
 async function SuspendedPage({ jobInfoId }: { jobInfoId: string }) {
-  const { userId, redirectToSignIn } = await getCurrentUser()
-  if (userId == null) return redirectToSignIn()
+  const { userId, redirectToSignIn } = await getCurrentUser();
+  if (userId == null) return redirectToSignIn();
 
-  const interviews = await getInterviews(jobInfoId, userId)
+  const interviews = await getInterviews(jobInfoId, userId);
+
+  // ! 这里如果用户没有面试，则跳转到新建面试页面
   if (interviews.length === 0) {
-    return redirect(`/app/job-infos/${jobInfoId}/interviews/new`)
+    return redirect(`/app/job-infos/${jobInfoId}/interviews/new`);
   }
+
   return (
     <div className="space-y-6 w-full">
       <div className="flex gap-2 justify-between">
@@ -72,7 +75,7 @@ async function SuspendedPage({ jobInfoId }: { jobInfoId: string }) {
             </div>
           </Card>
         </Link>
-        {interviews.map(interview => (
+        {interviews.map((interview) => (
           <Link
             className="hover:scale-[1.02] transition-[transform_opacity]"
             href={`/app/job-infos/${jobInfoId}/interviews/${interview.id}`}
@@ -95,13 +98,13 @@ async function SuspendedPage({ jobInfoId }: { jobInfoId: string }) {
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 async function getInterviews(jobInfoId: string, userId: string) {
-  "use cache"
-  cacheTag(getInterviewJobInfoTag(jobInfoId))
-  cacheTag(getJobInfoIdTag(jobInfoId))
+  "use cache";
+  cacheTag(getInterviewJobInfoTag(jobInfoId));
+  cacheTag(getJobInfoIdTag(jobInfoId));
 
   const data = await db.query.InterviewTable.findMany({
     where: and(
@@ -110,7 +113,7 @@ async function getInterviews(jobInfoId: string, userId: string) {
     ),
     with: { jobInfo: { columns: { userId: true } } },
     orderBy: desc(InterviewTable.updatedAt),
-  })
+  });
 
-  return data.filter(interview => interview.jobInfo.userId === userId)
+  return data.filter((interview) => interview.jobInfo.userId === userId);
 }

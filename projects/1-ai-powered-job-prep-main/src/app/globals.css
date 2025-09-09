@@ -1,3 +1,4 @@
+/* 这行是给ClerkProvider添加样式时，加上的 */
 @layer theme, base, vendor, components, utilities;
 
 @import "tailwindcss";
