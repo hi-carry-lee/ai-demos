@@ -1,22 +1,22 @@
-import { UserAvatar } from "@/features/users/components/UserAvatar"
-import { cn } from "@/lib/utils"
-import { BrainCircuitIcon } from "lucide-react"
+import { UserAvatar } from "@/features/users/components/UserAvatar";
+import { cn } from "@/lib/utils";
+import { BrainCircuitIcon } from "lucide-react";
 
-export function CondensedMessages({
+export function CondensedConversation({
   messages,
   user,
   className,
   maxFft = 0,
 }: {
-  messages: { isUser: boolean; content: string[] }[]
-  user: { name: string; imageUrl: string }
-  className?: string
-  maxFft?: number
+  messages: { isUser: boolean; content: string[] }[];
+  user: { name: string; imageUrl: string };
+  className?: string;
+  maxFft?: number;
 }) {
   return (
     <div className={cn("flex flex-col gap-4 w-full", className)}>
       {messages.map((message, index) => {
-        const shouldAnimate = index === messages.length - 1 && maxFft > 0
+        const shouldAnimate = index === messages.length - 1 && maxFft > 0;
 
         return (
           <div
@@ -48,8 +48,8 @@ export function CondensedMessages({
               ))}
             </div>
           </div>
-        )
+        );
       })}
     </div>
-  )
+  );
 }

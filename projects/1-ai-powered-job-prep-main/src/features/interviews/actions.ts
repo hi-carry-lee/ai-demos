@@ -72,6 +72,7 @@ export const updateInterview = withAuthInterview(
   }
 );
 
+// 生成面试反馈：拿到 humeChatId 后，从 Hume 拉取会话消息，喂给 Gemini 生成 Markdown 反馈
 export const generateInterviewFeedback = withAuthInterviewNoParam(
   async (userId, interviewId: string) => {
     const { user } = await getCurrentUser({ allData: true });

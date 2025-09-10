@@ -36,7 +36,7 @@ export function Navbar({ user }: { user: { name: string; imageUrl: string } }) {
     // h-header 是Tailwind CSS v4 的新特性，因为在globals.css中定义了 --spacing-header
     <nav className="h-header border-b">
       <div className="container flex h-full items-center justify-between">
-        <Link href="/app" className="flex items-center gap-2">
+        <Link href="/" className="flex items-center gap-2">
           <BrainCircuitIcon className="size-8 text-primary" />
           <span className="text-xl font-bold">Landr</span>
         </Link>

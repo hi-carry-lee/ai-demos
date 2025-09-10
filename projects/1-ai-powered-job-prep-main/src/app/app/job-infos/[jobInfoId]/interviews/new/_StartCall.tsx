@@ -8,8 +8,8 @@ import {
   updateInterview,
 } from "@/features/interviews/actions";
 import { errorToast } from "@/lib/errorToast";
-import { CondensedMessages } from "@/services/hume/components/CondensedMessages";
-import { condenseChatMessages } from "@/services/hume/lib/condenseChatMessages";
+import { CondensedConversation } from "@/services/hume/components/CondensedMessages";
+import { condenseChatHistory } from "@/services/hume/lib/condenseChatMessages";
 import { useVoice, VoiceReadyState } from "@humeai/voice-react";
 import { Loader2Icon, MicIcon, MicOffIcon, PhoneOffIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -38,6 +38,7 @@ export function StartCall({
   durationRef.current = callDurationTimestamp;
 
   // Sync chat ID
+  // 会话元数据产生后，同步 humeChatId 到数据库（后续用于拉取完整对话并生成反馈）：
   useEffect(() => {
     if (chatMetadata?.chatId == null || interviewId == null) {
       return;
@@ -48,7 +49,7 @@ export function StartCall({
     });
   }, [chatMetadata?.chatId, interviewId]);
 
-  // Sync duration
+  // Sync duration 通话进行中，每 10 秒同步通话时长到 DB
   useEffect(() => {
     if (interviewId == null) return;
     const intervalId = setInterval(() => {
@@ -64,6 +65,7 @@ export function StartCall({
   }, [interviewId]);
 
   // Handle disconnect
+  // 通话结束后：做一次时长同步，并路由到该面试详情页（若没拿到 interviewId，回列表页）：
   useEffect(() => {
     if (readyState !== VoiceReadyState.CLOSED) return;
     if (interviewId == null) {
@@ -79,19 +81,21 @@ export function StartCall({
     router.push(`/app/job-infos/${jobInfo.id}/interviews/${interviewId}`);
   }, [interviewId, readyState, router, jobInfo.id]);
 
-  // * IDLE状态，可以通过点击按钮，连接Hume开始通话
+  // * IDLE状态，这里有开始面试按钮，连接Hume开始通话
   if (readyState === VoiceReadyState.IDLE) {
     return (
       <div className="flex justify-center items-center h-screen-header">
         <Button
           size="lg"
           onClick={async () => {
+            // 1. 点击开始面试按钮，想创建面试记录
             const res = await createInterview({ jobInfoId: jobInfo.id });
             if (res.error) {
               return errorToast(res.message);
             }
+            // 2. 保存面试记录ID，
             setInterviewId(res.data.id);
-            // 来自useVoice()钩子，提供需要的参数以连接Hume
+            // 3. 开始连接Hume：connect是来自useVoice()钩子，提供需要的参数以连接Hume
             connect({
               auth: { type: "accessToken", value: accessToken },
               configId: env.NEXT_PUBLIC_HUME_CONFIG_ID,
@@ -141,11 +145,11 @@ function Messages({ user }: { user: { name: string; imageUrl: string } }) {
   const { messages, fft } = useVoice();
 
   const condensedMessages = useMemo(() => {
-    return condenseChatMessages(messages);
+    return condenseChatHistory(messages);
   }, [messages]);
 
   return (
-    <CondensedMessages
+    <CondensedConversation
       messages={condensedMessages}
       user={user}
       maxFft={Math.max(...fft)}

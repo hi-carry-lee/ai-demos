@@ -46,7 +46,7 @@ async function SuspendedPage({ jobInfoId }: { jobInfoId: string }) {
 
   const interviews = await getInterviews(jobInfoId, userId);
 
-  // ! 这里如果用户没有面试，则跳转到新建面试页面
+  // ? 这里如果用户没有面试，则跳转到 新建面试页面
   if (interviews.length === 0) {
     return redirect(`/app/job-infos/${jobInfoId}/interviews/new`);
   }
@@ -63,40 +63,42 @@ async function SuspendedPage({ jobInfoId }: { jobInfoId: string }) {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 has-hover:*:not-hover:opacity-70">
-        <Link
-          className="transition-opacity"
-          href={`/app/job-infos/${jobInfoId}/interviews/new`}
-        >
-          <Card className="h-full flex items-center justify-center border-dashed border-3 bg-transparent hover:border-primary/50 transition-colors shadow-none">
-            <div className="text-lg flex items-center gap-2">
-              <PlusIcon className="size-6" />
-              New Interview
-            </div>
-          </Card>
-        </Link>
+      <ul className="grid grid-cols-1 lg:grid-cols-2 gap-6 has-hover:*:not-hover:opacity-70">
         {interviews.map((interview) => (
-          <Link
-            className="hover:scale-[1.02] transition-[transform_opacity]"
-            href={`/app/job-infos/${jobInfoId}/interviews/${interview.id}`}
+          <li
             key={interview.id}
+            className="list-none hover:scale-[1.02] transition-[transform_opacity]"
           >
-            <Card className="h-full">
-              <div className="flex items-center justify-between h-full">
-                <CardHeader className="gap-1 flex-grow">
-                  <CardTitle className="text-lg">
-                    {formatDateTime(interview.createdAt)}
-                  </CardTitle>
-                  <CardDescription>{interview.duration}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ArrowRightIcon className="size-6" />
-                </CardContent>
+            <Link
+              href={`/app/job-infos/${jobInfoId}/interviews/${interview.id}`}
+            >
+              <Card className="h-full">
+                <div className="flex items-center justify-between h-full">
+                  <CardHeader className="gap-1 flex-grow">
+                    <CardTitle className="text-lg">
+                      {formatDateTime(interview.createdAt)}
+                    </CardTitle>
+                    <CardDescription>{interview.duration}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ArrowRightIcon className="size-6" />
+                  </CardContent>
+                </div>
+              </Card>
+            </Link>
+          </li>
+        ))}
+        <li className="list-none hover:scale-[1.02] transition-[transform_opacity]">
+          <Link href={`/app/job-infos/${jobInfoId}/interviews/new`}>
+            <Card className="h-full flex items-center justify-center border-dashed border-3 bg-transparent hover:border-primary/50 transition-colors shadow-none">
+              <div className="text-lg flex items-center gap-2">
+                <PlusIcon className="size-6" />
+                New Interview
               </div>
             </Card>
           </Link>
-        ))}
-      </div>
+        </li>
+      </ul>
     </div>
   );
 }
@@ -104,6 +106,7 @@ async function SuspendedPage({ jobInfoId }: { jobInfoId: string }) {
 async function getInterviews(jobInfoId: string, userId: string) {
   "use cache";
   cacheTag(getInterviewJobInfoTag(jobInfoId));
+  // todo：是否冗余？
   cacheTag(getJobInfoIdTag(jobInfoId));
 
   const data = await db.query.InterviewTable.findMany({
