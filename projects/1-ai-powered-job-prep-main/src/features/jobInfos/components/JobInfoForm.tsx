@@ -51,11 +51,11 @@ export function JobInfoForm({
 
   async function onSubmit(values: JobInfoFormData) {
     const action = jobInfo
-      ? updateJobInfo.bind(null, jobInfo.id)
+      ? updateJobInfo.bind(null, { id: jobInfo.id, unsafeData: values })
       : createJobInfo;
     const res = await action(values);
 
-    if (res.error) {
+    if (res && "error" in res) {
       toast.error(res.message);
     }
   }

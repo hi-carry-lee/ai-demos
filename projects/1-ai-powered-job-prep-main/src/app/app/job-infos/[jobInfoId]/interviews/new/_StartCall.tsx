@@ -134,14 +134,14 @@ export function StartCall({
   return (
     <div className="overflow-y-auto h-screen-header flex flex-col-reverse">
       <div className="container py-6 flex flex-col items-center justify-end gap-4">
-        <Messages user={user} />
+        <Conversation user={user} />
         <Controls />
       </div>
     </div>
   );
 }
 
-function Messages({ user }: { user: { name: string; imageUrl: string } }) {
+function Conversation({ user }: { user: { name: string; imageUrl: string } }) {
   const { messages, fft } = useVoice();
 
   const condensedMessages = useMemo(() => {
@@ -158,12 +158,14 @@ function Messages({ user }: { user: { name: string; imageUrl: string } }) {
   );
 }
 
+// 通话控制按钮
 function Controls() {
   const { disconnect, isMuted, mute, unmute, micFft, callDurationTimestamp } =
     useVoice();
 
   return (
     <div className="flex gap-5 rounded border px-5 py-2 w-fit sticky bottom-6 bg-background items-center">
+      {/* 静音按钮 */}
       <Button
         variant="ghost"
         size="icon"
@@ -173,12 +175,18 @@ function Controls() {
         {isMuted ? <MicOffIcon className="text-destructive" /> : <MicIcon />}
         <span className="sr-only">{isMuted ? "Unmute" : "Mute"}</span>
       </Button>
+
+      {/* 音量条 */}
       <div className="self-stretch">
         <FftVisualizer fft={micFft} />
       </div>
+
+      {/* 通话时长 */}
       <div className="text-sm text-muted-foreground tabular-nums">
         {callDurationTimestamp}
       </div>
+
+      {/* 结束通话按钮 */}
       <Button
         variant="ghost"
         size="icon"
@@ -192,6 +200,12 @@ function Controls() {
   );
 }
 
+/*
+! 这里实现了基本的音量条效果，更复杂的方式可以咨询AI
+? FFT (Fast Fourier Transform - 快速傅里叶变换)： 
+?   将音频信号从时域转换为频域
+?   fft 数组中的每个数值代表特定频率范围的音量强度
+*/
 function FftVisualizer({ fft }: { fft: number[] }) {
   return (
     <div className="flex gap-1 items-center h-full">

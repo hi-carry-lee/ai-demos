@@ -49,6 +49,7 @@ export default async function JobInfoPage({
       <BackLink href="/app">Dashboard</BackLink>
 
       <div className="space-y-6">
+        {/* 展示job详情 */}
         <header className="space-y-4">
           <div className="space-y-2">
             {/* title */}
@@ -93,6 +94,7 @@ export default async function JobInfoPage({
           </p>
         </header>
 
+        {/* 跳转Interview，questions，resume，edit4个页面 */}
         <ul className="grid grid-cols-1 lg:grid-cols-2 gap-6 has-hover:*:not-hover:opacity-70">
           {options.map((option) => (
             <li

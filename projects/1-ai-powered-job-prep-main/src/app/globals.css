@@ -3,6 +3,7 @@
 
 @import "tailwindcss";
 @import "tw-animate-css";
+/* TailWind CSS的插件，专门用来渲染文本样式 */
 @plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));

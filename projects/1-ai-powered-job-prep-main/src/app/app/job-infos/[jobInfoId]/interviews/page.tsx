@@ -34,13 +34,14 @@ export default async function InterviewsPage({
       <Suspense
         fallback={<Loader2Icon className="size-24 animate-spin m-auto" />}
       >
-        <SuspendedPage jobInfoId={jobInfoId} />
+        <SuspendedInterviewList jobInfoId={jobInfoId} />
       </Suspense>
     </div>
   );
 }
 
-async function SuspendedPage({ jobInfoId }: { jobInfoId: string }) {
+// 面试列表
+async function SuspendedInterviewList({ jobInfoId }: { jobInfoId: string }) {
   const { userId, redirectToSignIn } = await getCurrentUser();
   if (userId == null) return redirectToSignIn();
 
@@ -63,6 +64,7 @@ async function SuspendedPage({ jobInfoId }: { jobInfoId: string }) {
         </Button>
       </div>
 
+      {/* 展示该用户的面试列表 */}
       <ul className="grid grid-cols-1 lg:grid-cols-2 gap-6 has-hover:*:not-hover:opacity-70">
         {interviews.map((interview) => (
           <li
