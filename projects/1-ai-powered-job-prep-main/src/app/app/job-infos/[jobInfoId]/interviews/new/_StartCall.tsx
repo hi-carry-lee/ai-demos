@@ -25,10 +25,7 @@ export function StartCall({
     typeof JobInfoTable.$inferSelect,
     "id" | "title" | "description" | "experienceLevel"
   >;
-  user: {
-    name: string;
-    imageUrl: string;
-  };
+  user: { name: string; imageUrl: string };
 }) {
   const { connect, readyState, chatMetadata, callDurationTimestamp } =
     useVoice();
@@ -142,6 +139,8 @@ export function StartCall({
 }
 
 function Conversation({ user }: { user: { name: string; imageUrl: string } }) {
+  // !useVoice可以实时获取到最新的对话数据，从而更新 messages的值
+  // !进而触发 CondensedConversation 的更新
   const { messages, fft } = useVoice();
 
   const condensedMessages = useMemo(() => {

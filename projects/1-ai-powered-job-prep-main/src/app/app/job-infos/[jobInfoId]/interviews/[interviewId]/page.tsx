@@ -118,6 +118,13 @@ function InterviewFeedbackActions({
 }
 
 // ! 面试对话
+/*
+ *对话数据来源
+ *1. 提前已经存储了humeChatId
+ *2. 获取面试的 humeChatId，调用 fetchChatMessages 从Hume实时获取面试数据
+ *3. 在 condenseChatHistory 处理对话数据格式
+ *4. 在 CondensedConversation 组件中渲染对话
+ */
 async function InterviewConversation({
   interview,
 }: {

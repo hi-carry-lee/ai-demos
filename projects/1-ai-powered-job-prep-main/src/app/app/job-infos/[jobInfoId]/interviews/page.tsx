@@ -108,7 +108,7 @@ async function SuspendedInterviewList({ jobInfoId }: { jobInfoId: string }) {
 async function getInterviews(jobInfoId: string, userId: string) {
   "use cache";
   cacheTag(getInterviewJobInfoTag(jobInfoId));
-  // todo：是否冗余？
+  // todo：冗余，通过过渡设计来避免一些潜在可能的问题，比如手动修改数据库的job
   cacheTag(getJobInfoIdTag(jobInfoId));
 
   const data = await db.query.InterviewTable.findMany({
@@ -120,5 +120,6 @@ async function getInterviews(jobInfoId: string, userId: string) {
     orderBy: desc(InterviewTable.updatedAt),
   });
 
+  // 因为 Interview 表中没有存储 userId，所以需要在过滤出 userId 匹配的面试
   return data.filter((interview) => interview.jobInfo.userId === userId);
 }
