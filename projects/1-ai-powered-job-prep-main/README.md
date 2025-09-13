@@ -30,3 +30,12 @@
 3. 为什么使用 Clerk 来收取功能使用费？
    Clerk 作为认证系统，本身就管理着用户身份，所以添加权限控制
    Clerk 计费系统的核心价值就是：将认证、权限管理、订阅付费整合在一个统一的系统中，让开发者可以专注于业务逻辑，而不是基础设施
+
+## shadcn/ui 组件
+
+1. Resizable
+2. Card
+3. Dialog
+4. DropdownMenu
+5. Textarea
+6. 
