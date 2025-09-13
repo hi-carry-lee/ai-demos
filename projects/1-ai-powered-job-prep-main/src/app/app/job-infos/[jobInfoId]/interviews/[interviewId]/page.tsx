@@ -46,13 +46,15 @@ export default async function InterviewPage({
   );
 
   return (
-    <div className="container my-4 space-y-4">
-      <BackLink href={`/app/job-infos/${jobInfoId}/interviews`}>
-        All Interviews
-      </BackLink>
+    <div className="container my-4 space-y-4 h-screen-header flex flex-col">
+      <div className="flex justify-start items-center ">
+        <BackLink href={`/app/job-infos/${jobInfoId}/interviews`}>
+          All Interviews
+        </BackLink>
+      </div>
 
-      <div className="space-y-6">
-        <header className="flex gap-2 justify-between">
+      <div className="space-y-6 flex flex-col flex-1 min-h-0">
+        <header className="flex gap-2 justify-between flex-shrink-0">
           <div className="space-y-2 mb-6">
             <h1 className="text-3xl md:text-4xl">
               Interview:
@@ -81,7 +83,9 @@ export default async function InterviewPage({
         <Suspense
           fallback={<Loader2Icon className="animate-spin size-24 mx-auto" />}
         >
-          <InterviewConversation interview={interview} />
+          <div className="flex-1 min-h-0 overflow-y-auto">
+            <InterviewConversation interview={interview} />
+          </div>
         </Suspense>
       </div>
     </div>
@@ -92,8 +96,7 @@ export default async function InterviewPage({
 function InterviewFeedbackActions({
   interview,
 }: {
-  // ?另外一种获取类型的方式：interview: InferSelectModel<typeof InterviewTable>;
-  // 但是它相对复杂，推荐使用下面的方式
+  // ?另外一种获取类型的方式：interview: InferSelectModel<typeof InterviewTable>; 但是它相对复杂，推荐使用下面的方式
   interview: typeof InterviewTable.$inferSelect;
 }) {
   if (interview.feedback == null) {

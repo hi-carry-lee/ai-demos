@@ -15,6 +15,8 @@ import { Loader2Icon, MicIcon, MicOffIcon, PhoneOffIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+// ! 为什么将这里的内容单独一个组件？
+// ! 因为涉及到交互，需要作为 Client Component
 export function StartCall({
   jobInfo,
   user,
@@ -77,41 +79,17 @@ export function StartCall({
     }
     router.push(`/app/job-infos/${jobInfo.id}/interviews/${interviewId}`);
   }, [interviewId, readyState, router, jobInfo.id]);
+  // TODO：上面三个useEffect适合抽取为三个独立的 custom hook
 
   // * IDLE状态，这里有开始面试按钮，连接Hume开始通话
   if (readyState === VoiceReadyState.IDLE) {
     return (
-      <div className="flex justify-center items-center h-screen-header">
-        <Button
-          size="lg"
-          onClick={async () => {
-            // 1. 点击开始面试按钮，想创建面试记录
-            const res = await createInterview({ jobInfoId: jobInfo.id });
-            if (res.error) {
-              return errorToast(res.message);
-            }
-            // 2. 保存面试记录ID，
-            setInterviewId(res.data.id);
-            // 3. 开始连接Hume：connect是来自useVoice()钩子，提供需要的参数以连接Hume
-            connect({
-              auth: { type: "accessToken", value: accessToken },
-              configId: env.NEXT_PUBLIC_HUME_CONFIG_ID,
-              sessionSettings: {
-                type: "session_settings",
-                variables: {
-                  // 这些变量是在Hume的config中的Prompt里面使用的
-                  userName: user.name,
-                  title: jobInfo.title || "Not Specified",
-                  description: jobInfo.description,
-                  experienceLevel: jobInfo.experienceLevel,
-                },
-              },
-            });
-          }}
-        >
-          Start Interview
-        </Button>
-      </div>
+      <StartInverview
+        jobInfo={jobInfo}
+        user={user}
+        accessToken={accessToken}
+        setInterviewId={setInterviewId}
+      />
     );
   }
 
@@ -121,7 +99,7 @@ export function StartCall({
     readyState === VoiceReadyState.CLOSED
   ) {
     return (
-      <div className="h-screen-header flex items-center justify-center">
+      <div className="h-screen-header-link flex items-center justify-center">
         <Loader2Icon className="animate-spin size-24" />
       </div>
     );
@@ -129,11 +107,67 @@ export function StartCall({
 
   // * 已连接，显示对话内容和控制按钮
   return (
-    <div className="overflow-y-auto h-screen-header flex flex-col-reverse">
+    <div className="overflow-y-auto h-screen-header-link flex flex-col-reverse">
       <div className="container py-6 flex flex-col items-center justify-end gap-4">
         <Conversation user={user} />
         <Controls />
       </div>
+    </div>
+  );
+}
+
+function StartInverview({
+  jobInfo,
+  user,
+  accessToken,
+  setInterviewId,
+}: {
+  jobInfo: Pick<
+    typeof JobInfoTable.$inferSelect,
+    "id" | "title" | "description" | "experienceLevel"
+  >;
+  user: { name: string; imageUrl: string };
+  accessToken: string;
+  setInterviewId: (interviewId: string) => void;
+}) {
+  const { connect, callDurationTimestamp } = useVoice();
+  const durationRef = useRef(callDurationTimestamp);
+  durationRef.current = callDurationTimestamp;
+
+  return (
+    <div
+      className="flex justify-center items-center"
+      style={{ height: "calc(100% - 3rem)" }}
+    >
+      <Button
+        size="lg"
+        onClick={async () => {
+          // 1. 点击开始面试按钮，想创建面试记录
+          const res = await createInterview({ jobInfoId: jobInfo.id });
+          if (res.error) {
+            return errorToast(res.message);
+          }
+          // 2. 保存面试记录ID，
+          setInterviewId(res.data.id);
+          // 3. 开始连接Hume：connect是来自useVoice()钩子，提供需要的参数以连接Hume
+          connect({
+            auth: { type: "accessToken", value: accessToken },
+            configId: env.NEXT_PUBLIC_HUME_CONFIG_ID,
+            sessionSettings: {
+              type: "session_settings",
+              variables: {
+                // 这些变量是在Hume的config中的Prompt里面使用的
+                userName: user.name,
+                title: jobInfo.title || "Not Specified",
+                description: jobInfo.description,
+                experienceLevel: jobInfo.experienceLevel,
+              },
+            },
+          });
+        }}
+      >
+        Start Interview
+      </Button>
     </div>
   );
 }
@@ -172,6 +206,7 @@ function Controls() {
         onClick={() => (isMuted ? unmute() : mute())}
       >
         {isMuted ? <MicOffIcon className="text-destructive" /> : <MicIcon />}
+        {/* 关于sr-only的说明：业界通用的 CSS 类名约定，用于隐藏文本，仅供屏幕阅读器使用，说明按钮当前状态 */}
         <span className="sr-only">{isMuted ? "Unmute" : "Mute"}</span>
       </Button>
 
@@ -181,6 +216,7 @@ function Controls() {
       </div>
 
       {/* 通话时长 */}
+      {/* 关于tabular-nums的说明：让数字以等宽字体显示，便于对齐，因为0和1的宽度是不同的，这样会导致布局跳动问题 */}
       <div className="text-sm text-muted-foreground tabular-nums">
         {callDurationTimestamp}
       </div>

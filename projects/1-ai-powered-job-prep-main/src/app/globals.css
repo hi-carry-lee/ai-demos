@@ -74,6 +74,7 @@
   --spacing-header: 4rem;
   /* 整个屏幕的高度减去 header 的高度， */
   --spacing-screen-header: calc(100vh - var(--spacing-header));
+  --spacing-screen-header-link: calc(100vh - 7rem);
   --letter-spacing: var(--letter-spacing);
   --shadow-offset-y: var(--shadow-offset-y);
   --shadow-offset-x: var(--shadow-offset-x);

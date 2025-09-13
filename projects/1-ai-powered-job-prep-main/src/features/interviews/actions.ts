@@ -10,10 +10,12 @@ import arcjet, { tokenBucket, request } from "@arcjet/next";
 import { generateAiInterviewFeedback } from "@/services/ai/interviews";
 import { getCurrentUser } from "@/services/clerk/lib/getCurrentUser";
 
+// ? 创建面试的速率限制
 const aj = arcjet({
   characteristics: ["userId"],
   key: env.ARCJET_KEY,
   rules: [
+    // 使用令牌桶算法，每1天填充4个令牌，最多12个令牌
     tokenBucket({
       capacity: 12,
       refillRate: 4,
@@ -29,6 +31,7 @@ export const createInterview = withAuthInterview(
       throw new Error(PLAN_LIMIT_MESSAGE);
     }
 
+    // requested: 1 表示每次请求消耗1个令牌
     const decision = await aj.protect(await request(), {
       userId,
       requested: 1,

@@ -12,6 +12,7 @@ import { env } from "@/data/env/server";
 import { VoiceProvider } from "@humeai/voice-react";
 import { StartCall } from "./_StartCall";
 import { canCreateInterview } from "@/features/interviews/permissions";
+import { BackLink } from "@/components/BackLink";
 
 export default async function NewInterviewPage({
   params,
@@ -20,15 +21,21 @@ export default async function NewInterviewPage({
 }) {
   const { jobInfoId } = await params;
   return (
-    <Suspense
-      fallback={
-        <div className="h-screen-header flex items-center justify-center">
-          <Loader2Icon className="animate-spin size-24" />
-        </div>
-      }
-    >
-      <SuspendedComponent jobInfoId={jobInfoId} />
-    </Suspense>
+    <div className="container py-4 gap-4 h-screen-header">
+      <BackLink href={`/app/job-infos/${jobInfoId}/interviews`}>
+        All Interviews
+      </BackLink>
+
+      <Suspense
+        fallback={
+          <div className="flex items-center justify-center">
+            <Loader2Icon className="animate-spin size-24" />
+          </div>
+        }
+      >
+        <SuspendedComponent jobInfoId={jobInfoId} />
+      </Suspense>
+    </div>
   );
 }
 
@@ -38,7 +45,7 @@ async function SuspendedComponent({ jobInfoId }: { jobInfoId: string }) {
   });
   if (userId == null || user == null) return redirectToSignIn();
 
-  // if (!(await canCreateInterview())) return redirect("/app/upgrade")
+  if (!(await canCreateInterview())) return redirect("/app/upgrade");
 
   const jobInfo = await getJobInfo(jobInfoId, userId);
   if (jobInfo == null) return notFound();

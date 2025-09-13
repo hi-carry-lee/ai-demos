@@ -124,7 +124,7 @@ export function withAuthInterview<T>(
 }
 
 /**
- * 用于interviews actions的认证装饰器（无参数版本）
+ * TODO：用于interviews actions的认证装饰器（无参数版本）  合理性验证
  * 返回格式：{ error: true; message: string } | { error: false; data: T }
  */
 export function withAuthInterviewNoParam<T>(
