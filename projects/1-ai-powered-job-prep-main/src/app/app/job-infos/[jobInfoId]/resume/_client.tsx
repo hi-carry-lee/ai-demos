@@ -1,38 +1,40 @@
-"use client"
+"use client";
 
-import { Skeleton } from "@/components/Skeleton"
+import { Skeleton } from "@/components/Skeleton";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@/components/ui/accordion"
-import { Badge } from "@/components/ui/badge"
+} from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { LoadingSwap } from "@/components/ui/loading-swap"
-import { cn } from "@/lib/utils"
-import { aiAnalyzeSchema } from "@/services/ai/resumes/schemas"
-import { experimental_useObject as useObject } from "@ai-sdk/react"
-import { DeepPartial } from "ai"
+} from "@/components/ui/card";
+import { LoadingSwap } from "@/components/ui/loading-swap";
+import { allowedTypes } from "@/features/resumeAnalyses/constants";
+import { cn } from "@/lib/utils";
+import { aiAnalyzeSchema } from "@/services/ai/resumes/schemas";
+import { experimental_useObject as useObject } from "@ai-sdk/react";
+import { DeepPartial } from "ai";
 import {
   AlertCircleIcon,
   CheckCircleIcon,
   UploadIcon,
   XCircleIcon,
-} from "lucide-react"
-import { ReactNode, useRef, useState } from "react"
-import { toast } from "sonner"
-import z from "zod"
+} from "lucide-react";
+import { ReactNode, useRef, useState } from "react";
+import { toast } from "sonner";
+import z from "zod";
 
+// * ------------------------------->上传简历页面<------------------------------
 export function ResumePageClient({ jobInfoId }: { jobInfoId: string }) {
-  const [isDragOver, setIsDragOver] = useState(false)
-  const fileRef = useRef<File | null>(null)
+  const [isDragOver, setIsDragOver] = useState(false);
+  const fileRef = useRef<File | null>(null);
 
   const {
     object: aiAnalysis,
@@ -42,41 +44,34 @@ export function ResumePageClient({ jobInfoId }: { jobInfoId: string }) {
     api: "/api/ai/resumes/analyze",
     schema: aiAnalyzeSchema,
     fetch: (url, options) => {
-      const headers = new Headers(options?.headers)
-      headers.delete("Content-Type")
+      const headers = new Headers(options?.headers);
+      headers.delete("Content-Type");
 
-      const formData = new FormData()
+      const formData = new FormData();
       if (fileRef.current) {
-        formData.append("resumeFile", fileRef.current)
+        formData.append("resumeFile", fileRef.current);
       }
-      formData.append("jobInfoId", jobInfoId)
+      formData.append("jobInfoId", jobInfoId);
 
-      return fetch(url, { ...options, headers, body: formData })
+      return fetch(url, { ...options, headers, body: formData });
     },
-  })
+  });
 
   function handleFileUpload(file: File | null) {
-    fileRef.current = file
-    if (file == null) return
+    fileRef.current = file;
+    if (file == null) return;
 
     if (file.size > 10 * 1024 * 1024) {
-      toast.error("File size exceeds 10MB limit")
-      return
+      toast.error("File size exceeds 10MB limit");
+      return;
     }
-
-    const allowedTypes = [
-      "application/pdf",
-      "application/msword",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      "text/plain",
-    ]
 
     if (!allowedTypes.includes(file.type)) {
-      toast.error("Please upload a PDF, Word document, or text file")
-      return
+      toast.error("Please upload a PDF, Word document, or text file");
+      return;
     }
 
-    generateAnalysis(null)
+    generateAnalysis(null);
   }
 
   return (
@@ -92,6 +87,7 @@ export function ResumePageClient({ jobInfoId }: { jobInfoId: string }) {
               : "Get personalized feedback on your resume based on the job"}
           </CardDescription>
         </CardHeader>
+
         <CardContent>
           <LoadingSwap loadingIconClassName="size-16" isLoading={isLoading}>
             <div
@@ -101,30 +97,32 @@ export function ResumePageClient({ jobInfoId }: { jobInfoId: string }) {
                   ? "border-primary bg-primary/5"
                   : "border-muted-foreground/50 bg-muted/10"
               )}
-              onDragOver={e => {
-                e.preventDefault()
-                setIsDragOver(true)
+              onDragOver={(e) => {
+                e.preventDefault();
+                setIsDragOver(true);
               }}
-              onDragLeave={e => {
-                e.preventDefault()
-                setIsDragOver(false)
+              onDragLeave={(e) => {
+                e.preventDefault();
+                setIsDragOver(false);
               }}
-              onDrop={e => {
-                e.preventDefault()
-                setIsDragOver(false)
-                handleFileUpload(e.dataTransfer.files[0] ?? null)
+              onDrop={(e) => {
+                e.preventDefault();
+                setIsDragOver(false);
+                handleFileUpload(e.dataTransfer.files[0] ?? null);
               }}
             >
-              <label htmlFor="resume-upload" className="sr-only">
+              {/* 隐藏的label，用于辅助屏幕阅读器 */}
+              <label htmlFor="resume-upload" className="sr-only ">
                 Upload your resume
               </label>
               <input
                 id="resume-upload"
                 type="file"
                 accept=".pdf,.doc,.docx,.txt"
+                // 隐藏文件输入模式：隐藏Input，通过absolute inset-0将Input覆盖在div上
                 className="opacity-0 absolute inset-0 cursor-pointer"
-                onChange={e => {
-                  handleFileUpload(e.target.files?.[0] ?? null)
+                onChange={(e) => {
+                  handleFileUpload(e.target.files?.[0] ?? null);
                 }}
               />
               <div className="flex flex-col items-center justify-center text-center gap-4">
@@ -145,19 +143,22 @@ export function ResumePageClient({ jobInfoId }: { jobInfoId: string }) {
 
       <AnalysisResults aiAnalysis={aiAnalysis} isLoading={isLoading} />
     </div>
-  )
+  );
 }
 
-type Keys = Exclude<keyof z.infer<typeof aiAnalyzeSchema>, "overallScore">
+type Keys = Exclude<keyof z.infer<typeof aiAnalyzeSchema>, "overallScore">;
 
+// * ------------------------------->展示简历分析结果<------------------------------
+// 简历分析结果的样式，依赖于在schema中定义的格式，要求AI按照指定格式返回数据，这样数据可预测
 function AnalysisResults({
   aiAnalysis,
   isLoading,
 }: {
-  aiAnalysis: DeepPartial<z.infer<typeof aiAnalyzeSchema>> | undefined
-  isLoading: boolean
+  // DeepPartial：它将类型 T 的所有属性（包括嵌套的属性）都变成可选的。
+  aiAnalysis: DeepPartial<z.infer<typeof aiAnalyzeSchema>> | undefined;
+  isLoading: boolean;
 }) {
-  if (!isLoading && aiAnalysis == null) return null
+  if (!isLoading && aiAnalysis == null) return null;
 
   const sections: Record<Keys, string> = {
     ats: "ATS Compatibility",
@@ -165,7 +166,7 @@ function AnalysisResults({
     writingAndFormatting: "Writing and Formatting",
     keywordCoverage: "Keyword Coverage",
     other: "Additional Insights",
-  }
+  };
 
   return (
     <Card>
@@ -180,9 +181,10 @@ function AnalysisResults({
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {/* 可折叠容器组件，展示简历分析结果 */}
         <Accordion type="multiple">
           {Object.entries(sections).map(([key, title]) => {
-            const category = aiAnalysis?.[key as Keys]
+            const category = aiAnalysis?.[key as Keys];
 
             return (
               <AccordionItem value={title} key={key}>
@@ -213,39 +215,39 @@ function AnalysisResults({
                         </>
                       ) : (
                         category.feedback.map((item, index) => {
-                          if (item == null) return null
+                          if (item == null) return null;
 
-                          return <FeedbackItem key={index} {...item} />
+                          return <FeedbackItem key={index} {...item} />;
                         })
                       )}
                     </div>
                   </div>
                 </AccordionContent>
               </AccordionItem>
-            )
+            );
           })}
         </Accordion>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 function CategoryAccordionHeader({
   title,
   score,
 }: {
-  title: string
-  score: number | undefined | null
+  title: string;
+  score: number | undefined | null;
 }) {
-  let badge: ReactNode
+  let badge: ReactNode;
   if (score == null) {
-    badge = <Skeleton className="w-16" />
+    badge = <Skeleton className="w-16" />;
   } else if (score >= 8) {
-    badge = <Badge>Excellent</Badge>
+    badge = <Badge>Excellent</Badge>;
   } else if (score >= 6) {
-    badge = <Badge variant="warning">Ok</Badge>
+    badge = <Badge variant="warning">Ok</Badge>;
   } else {
-    badge = <Badge variant="destructive">Needs Works</Badge>
+    badge = <Badge variant="destructive">Needs Works</Badge>;
   }
 
   return (
@@ -256,7 +258,7 @@ function CategoryAccordionHeader({
       </div>
       {score == null ? <Skeleton className="w-12" /> : `${score}/10`}
     </div>
-  )
+  );
 }
 
 function FeedbackItem({
@@ -264,33 +266,33 @@ function FeedbackItem({
   name,
   type,
 }: Partial<z.infer<typeof aiAnalyzeSchema>["ats"]["feedback"][number]>) {
-  if (name == null || message == null || type == null) return null
+  if (name == null || message == null || type == null) return null;
 
   const getColors = () => {
     switch (type) {
       case "strength":
-        return "bg-primary/10 border border-primary/50"
+        return "bg-primary/10 border border-primary/50";
       case "major-improvement":
-        return "bg-destructive/10 dark:bg-destructive/20 border border-destructive/50 dark:border-destructive/70"
+        return "bg-destructive/10 dark:bg-destructive/20 border border-destructive/50 dark:border-destructive/70";
       case "minor-improvement":
-        return "bg-warning/10 border border-warning/40"
+        return "bg-warning/10 border border-warning/40";
       default:
-        throw new Error(`Unknown feedback type: ${type satisfies never}`)
+        throw new Error(`Unknown feedback type: ${type satisfies never}`);
     }
-  }
+  };
 
   const getIcon = () => {
     switch (type) {
       case "strength":
-        return <CheckCircleIcon className="size-4 text-primary" />
+        return <CheckCircleIcon className="size-4 text-primary" />;
       case "minor-improvement":
-        return <AlertCircleIcon className="size-4 text-warning" />
+        return <AlertCircleIcon className="size-4 text-warning" />;
       case "major-improvement":
-        return <XCircleIcon className="size-4 text-destructive" />
+        return <XCircleIcon className="size-4 text-destructive" />;
       default:
-        throw new Error(`Unknown feedback type: ${type satisfies never}`)
+        throw new Error(`Unknown feedback type: ${type satisfies never}`);
     }
-  }
+  };
 
   return (
     <div
@@ -305,5 +307,5 @@ function FeedbackItem({
         <div className="text-muted-foreground">{message}</div>
       </div>
     </div>
-  )
+  );
 }

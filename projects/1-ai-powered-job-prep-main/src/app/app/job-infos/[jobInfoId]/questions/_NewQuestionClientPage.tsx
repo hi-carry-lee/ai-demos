@@ -32,6 +32,7 @@ export function NewQuestionClientPage({
   const [status, setStatus] = useState<Status>("init");
   const [answer, setAnswer] = useState<string | null>(null);
 
+  // * ------------------------------->AI生成问题<------------------------------
   const {
     complete: generateQuestion, // 触发 AI 生成的函数，通过用户点击难度按钮触发
     completion: question, // 生成的内容
@@ -49,6 +50,7 @@ export function NewQuestionClientPage({
     },
   });
 
+  // * ------------------------------->AI生成反馈<------------------------------
   const {
     complete: generateFeedback,
     completion: feedback,
@@ -64,8 +66,11 @@ export function NewQuestionClientPage({
     },
   });
 
+  // 使用useMemo避免每次组件渲染都重新解析数据，只有当 data 发生变化时才重新计算 qu
   const questionId = useMemo(() => {
+    // 通过at(-1)获取最新的问题，这只是一个防御性编程；
     const item = data?.at(-1);
+    // 使用 Zod schema 验证数据是否包含有效的 questionId 字段
     if (item == null) return null;
     const parsed = z.object({ questionId: z.string() }).safeParse(item);
     if (!parsed.success) return null;
@@ -196,7 +201,8 @@ function QuestionAnswerContainer({
   status,
   setAnswer,
 }: {
-  question: string | null;
+  question: string | null; // 比如传值，要么string，要么null，不会是undefined
+  // question?: string; 可以不传，默认值是null，
   feedback: string | null;
   answer: string | null;
   status: Status;
@@ -204,6 +210,7 @@ function QuestionAnswerContainer({
 }) {
   return (
     <ResizablePanelGroup direction="horizontal" className="flex-grow border-t">
+      {/* 问题和反馈容器 */}
       <ResizablePanel id="question-and-feedback" defaultSize={50} minSize={5}>
         <ResizablePanelGroup direction="vertical" className="flex-grow">
           <ResizablePanel id="question" defaultSize={25} minSize={5}>
@@ -223,6 +230,7 @@ function QuestionAnswerContainer({
           </ResizablePanel>
           {feedback && (
             <>
+              {/* 在两个panel之间添加一个分割线，只有当有feedback的时候才显示 */}
               <ResizableHandle withHandle />
               <ResizablePanel id="feedback" defaultSize={75} minSize={5}>
                 {/* 通用选择器修饰符，*:h-full：给所有直接子元素设置 height: 100% */}
@@ -236,7 +244,11 @@ function QuestionAnswerContainer({
           )}
         </ResizablePanelGroup>
       </ResizablePanel>
+
+      {/* 在两个panel之间添加一个分割线 */}
       <ResizableHandle withHandle />
+
+      {/* 答案容器 */}
       <ResizablePanel id="answer" defaultSize={50} minSize={5}>
         <ScrollArea className="h-full min-w-48 *:h-full">
           <Textarea
