@@ -1,0 +1,42 @@
+### Health Check
+GET http://localhost:3000/api/health
+
+### Chat API - Send a message
+POST http://localhost:3000/api/chat-one-time
+Content-Type: application/json
+
+{
+  "message": "Hello, how are you?"
+}
+
+### Chat API - Ask about previous question
+POST http://localhost:3000/api/chat-with-history
+Content-Type: application/json
+
+{
+  "message": "what was my previous question?"
+}
+
+### Gemini one time
+POST http://localhost:3000/api/chat-one-time-gemini
+Content-Type: application/json
+
+{
+  "message": "hello, how are you?"
+}
+
+### Gemini with history start
+POST http://localhost:3000/api/chat-with-history-gemini
+Content-Type: application/json
+
+{
+  "message": "I have 2 dogs"
+}
+
+### Gemini with history continue
+POST http://localhost:3000/api/chat-with-history-gemini
+Content-Type: application/json
+
+{
+  "message": "what was my last question?"
+}
