@@ -18,6 +18,10 @@ const envSchema = z.object({
   SILICONFLOW_API_KEY: z.string().min(1, "SILICONFLOW_API_KEY is required"),
   // Add GEMINI_API_KEY if you use it
   GEMINI_API_KEY: z.string().min(1, "GEMINI_API_KEY is required"),
+  // 数据库配置
+  DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
+  // JWT配置
+  JWT_SECRET: z.string().min(1, "JWT_SECRET is required"),
 });
 
 // Parse and validate environment variables
