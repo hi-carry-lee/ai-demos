@@ -1,5 +1,5 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -8,6 +8,8 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+
+  /* Shadcn 标准颜色映射 */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -39,82 +41,268 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Glassmorphism 扩展颜色映射 */
+  --color-glass-bg: var(--glass-bg);
+  --color-glass-card: var(--glass-card);
+  --color-glass-card-hover: var(--glass-card-hover);
+  --color-glass-border: var(--glass-border);
+  --color-glass-input: var(--glass-input);
+  --color-glass-input-border: var(--glass-input-border);
+  --color-glass-button: var(--glass-button);
+  --color-glass-button-hover: var(--glass-button-hover);
+  --color-glass-text-primary: var(--glass-text-primary);
+  --color-glass-text-secondary: var(--glass-text-secondary);
+  --color-glass-text-muted: var(--glass-text-muted);
 }
 
+/* ============================================
+   浅色主题 (Light Mode)
+   ============================================ */
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --radius: 0.75rem;
+
+  /* Glassmorphism 浅色主题基础变量 */
+  --glass-bg: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #bae6fd 100%);
+  /* 卡片稍微提升 */
+  --glass-card: rgba(255, 255, 255, 0.82);
+  --glass-card-hover: rgba(255, 255, 255, 0.9);
+  --glass-border: rgba(255, 255, 255, 0.5);
+  --glass-input: rgba(255, 255, 255, 0.6);
+  --glass-input-border: rgba(59, 130, 246, 0.3);
+
+  /* 🎯 修改后的浅色按钮：半透明渐变 + 光晕效果 */
+  --glass-button: linear-gradient(
+    135deg,
+    rgba(147, 51, 234, 0.25),
+    rgba(59, 130, 246, 0.25)
+  );
+  --glass-button-hover: linear-gradient(
+    135deg,
+    rgba(147, 51, 234, 0.35),
+    rgba(59, 130, 246, 0.35)
+  );
+
+  /* 文字颜色 - 柔和的深灰色，更适合磨砂玻璃背景 */
+  --glass-text-primary: rgba(30, 41, 59, 0.9); /* 深蓝灰色 90% - 柔和而清晰 */
+  --glass-text-secondary: rgba(51, 65, 85, 0.8); /* 中蓝灰色 80% - 平衡可读性 */
+  --glass-text-muted: rgba(71, 85, 105, 0.7); /* 浅蓝灰色 70% - 柔和辅助文字 */
+
+  /* Shadcn 组件标准颜色 */
+  --background: var(--glass-bg);
+  --foreground: var(--glass-text-primary);
+  --card: var(--glass-card);
+  --card-foreground: var(--glass-text-primary);
+  --popover: var(--glass-card);
+  --popover-foreground: var(--glass-text-primary);
+  --primary: var(--glass-button);
+  --primary-foreground: var(--glass-text-primary);
+  --secondary: var(--glass-card-hover);
+  --secondary-foreground: var(--glass-text-primary);
+  --muted: var(--glass-input);
+  --muted-foreground: var(--glass-text-secondary);
+  --accent: var(--glass-card-hover);
+  --accent-foreground: var(--glass-text-primary);
+  --destructive: rgba(239, 68, 68, 0.8);
+  --destructive-foreground: #ffffff;
+  --border: var(--glass-border);
+  --input: var(--glass-input);
+  --ring: rgba(147, 51, 234, 0.4);
+  --chart-1: var(--glass-button);
+  --chart-2: var(--glass-text-secondary);
+  --chart-3: var(--glass-text-muted);
+  --chart-4: var(--glass-card);
+  --chart-5: var(--glass-card-hover);
+  --sidebar: var(--glass-card);
+  --sidebar-foreground: var(--glass-text-primary);
+  --sidebar-primary: var(--glass-button);
+  --sidebar-primary-foreground: var(--glass-text-primary);
+  --sidebar-accent: var(--glass-card-hover);
+  --sidebar-accent-foreground: var(--glass-text-primary);
+  --sidebar-border: var(--glass-border);
+  --sidebar-ring: rgba(147, 51, 234, 0.4);
 }
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+/* ============================================
+   深色主题 (Dark Mode)
+   ============================================ */
+html.dark {
+  /* Glassmorphism 深色主题基础变量 */
+  --glass-bg: linear-gradient(
+    135deg,
+    #0f0c29 0%,
+    #302b63 25%,
+    #24243e 50%,
+    #0f0c29 100%
+  );
+  --glass-card: rgba(255, 255, 255, 0.08);
+  --glass-card-hover: rgba(255, 255, 255, 0.12);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-input: rgba(255, 255, 255, 0.05);
+  --glass-input-border: rgba(255, 255, 255, 0.15);
+  --glass-button: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --glass-button-hover: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+  --glass-text-primary: #ffffff;
+  --glass-text-secondary: rgba(255, 255, 255, 0.8);
+  --glass-text-muted: rgba(255, 255, 255, 0.6);
+
+  /* Shadcn 组件标准颜色 */
+  --background: var(--glass-bg);
+  --foreground: var(--glass-text-primary);
+  --card: var(--glass-card);
+  --card-foreground: var(--glass-text-primary);
+  --popover: var(--glass-card);
+  --popover-foreground: var(--glass-text-primary);
+  --primary: var(--glass-button);
+  --primary-foreground: #ffffff;
+  --secondary: var(--glass-card-hover);
+  --secondary-foreground: var(--glass-text-primary);
+  --muted: var(--glass-input);
+  --muted-foreground: var(--glass-text-secondary);
+  --accent: var(--glass-card-hover);
+  --accent-foreground: var(--glass-text-primary);
+  --destructive: rgba(239, 68, 68, 0.8);
+  --destructive-foreground: #ffffff;
+  --border: var(--glass-border);
+  --input: var(--glass-input);
+  --ring: rgba(102, 126, 234, 0.5);
+  --chart-1: var(--glass-button);
+  --chart-2: var(--glass-text-secondary);
+  --chart-3: var(--glass-text-muted);
+  --chart-4: var(--glass-card);
+  --chart-5: var(--glass-card-hover);
+  --sidebar: var(--glass-card);
+  --sidebar-foreground: var(--glass-text-primary);
+  --sidebar-primary: var(--glass-button);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--glass-card-hover);
+  --sidebar-accent-foreground: var(--glass-text-primary);
+  --sidebar-border: var(--glass-border);
+  --sidebar-ring: rgba(102, 126, 234, 0.5);
 }
 
+/* ============================================
+   基础样式层
+   ============================================ */
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
+    min-height: 100vh;
+    background-attachment: fixed;
+  }
+
+  /* 全局磨砂玻璃效果 */
+  .glass-effect {
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  }
+
+  /* 卡片磨砂效果 */
+  .glass-card {
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  }
+
+  /* 输入框磨砂效果 */
+  .glass-input {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  /* 按钮磨砂效果 */
+  .glass-button {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 16px 0 rgba(31, 38, 135, 0.3);
+  }
+}
+
+/* ============================================
+   工具类层
+   ============================================ */
+@layer utilities {
+  /* 背景相关 */
+  .bg-glass {
+    background: var(--glass-bg) !important;
+  }
+
+  .bg-glass-card {
+    background: var(--glass-card) !important;
+  }
+
+  .bg-glass-card-hover {
+    background: var(--glass-card-hover) !important;
+  }
+
+  .bg-glass-input {
+    background: var(--glass-input) !important;
+  }
+
+  .bg-glass-button {
+    background: var(--glass-button) !important;
+  }
+
+  .hover\:bg-glass-button-hover:hover {
+    background: var(--glass-button-hover) !important;
+  }
+
+  /* 文字颜色 */
+  .text-glass-primary {
+    color: var(--glass-text-primary) !important;
+  }
+
+  .text-glass-secondary {
+    color: var(--glass-text-secondary) !important;
+  }
+
+  .text-glass-muted {
+    color: var(--glass-text-muted) !important;
+  }
+
+  /* 边框颜色 */
+  .border-glass {
+    border-color: var(--glass-border) !important;
+  }
+
+  .border-glass-input {
+    border-color: var(--glass-input-border) !important;
+  }
+
+  /* 渐变文字效果 */
+  .text-gradient {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* 发光效果 */
+  .glow {
+    box-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
+  }
+
+  /* 浅色模式专属按钮光晕 */
+  .glow-light {
+    box-shadow: 0 0 20px rgba(147, 51, 234, 0.3);
+  }
+
+  /* 悬浮效果 */
+  .hover-lift {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.5);
   }
 }
