@@ -17,7 +17,6 @@ router.get(
   MessageController.getLatestMessages
 );
 router.get("/:id", authenticateToken, MessageController.getMessageById);
-router.put("/:id", authenticateToken, MessageController.updateMessage);
 router.delete("/:id", authenticateToken, MessageController.deleteMessage);
 
 export default router;

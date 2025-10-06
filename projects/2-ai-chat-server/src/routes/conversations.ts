@@ -12,6 +12,11 @@ router.get(
   authenticateToken,
   ConversationController.getConversationById
 );
+router.delete(
+  "/:id",
+  authenticateToken,
+  ConversationController.deleteConversation
+);
 router.put(
   "/:id",
   authenticateToken,

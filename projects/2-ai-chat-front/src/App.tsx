@@ -1,8 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
-import Chat from '@/pages/Chat';
+import Conversation from '@/pages/Chat';
 import { getToken } from '@/lib/axios';
+import { Toaster } from '@/components/ui/toaster';
 
 // 私有路由组件
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
@@ -40,12 +41,13 @@ function App() {
           path="/chat"
           element={
             <PrivateRoute>
-              <Chat />
+              <Conversation />
             </PrivateRoute>
           }
         />
         <Route path="/" element={<Navigate to="/chat" replace />} />
       </Routes>
+      <Toaster />
     </BrowserRouter>
   );
 }

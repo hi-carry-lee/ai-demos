@@ -236,4 +236,41 @@ export class ConversationController {
       return;
     }
   }
+
+  // 根据id删除会话
+  static async deleteConversation(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+
+      if (!id) {
+        return res.status(400).json({
+          success: false,
+          error: "会话id不能为空",
+        });
+      }
+
+      const existingConversation =
+        await ConversationService.findConversationById(id);
+      if (!existingConversation) {
+        return res.status(404).json({
+          success: false,
+          error: "会话不存在",
+        });
+      }
+
+      await ConversationService.deleteConversation(id);
+      res.json({
+        success: true,
+        message: "会话删除成功",
+      });
+      return;
+    } catch (error) {
+      console.error("删除会话控制器错误:", error);
+      res.status(500).json({
+        success: false,
+        error: "服务器内部错误",
+      });
+      return;
+    }
+  }
 }

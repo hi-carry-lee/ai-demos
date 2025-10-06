@@ -17,6 +17,12 @@ export class MessageService {
       throw new Error("会话不存在");
     }
 
+    // 插入消息
+
+    // 调用AI模型获取回复
+
+    // 插入新回复的消息
+
     return MessageRepository.create(data);
   }
 

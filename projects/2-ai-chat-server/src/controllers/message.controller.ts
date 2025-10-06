@@ -9,6 +9,7 @@ import {
   messageIdParamSchema,
   conversationIdParamSchemaForMessages,
 } from "../lib/validations.js";
+import { multiTurnChat } from "../services/gemini.service.js";
 
 export class MessageController {
   /**
@@ -31,15 +32,11 @@ export class MessageController {
         });
       }
 
-      const { conversationId, role, content } = validationResult.data;
+      const userId = (req as any).userId;
 
-      const messageData = {
-        conversationId,
-        role,
-        content,
-      };
+      const { conversationId, content } = validationResult.data;
 
-      const message = await MessageService.createMessage(messageData);
+      const message = await multiTurnChat(content, conversationId, userId);
 
       res.status(201).json({
         success: true,

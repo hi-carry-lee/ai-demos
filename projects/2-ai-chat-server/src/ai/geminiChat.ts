@@ -19,12 +19,8 @@ const chat = client.chats.create({
   model: "gemini-2.5-flash",
   history: [
     {
-      role: "user",
-      parts: [{ text: "Hello" }],
-    },
-    {
       role: "model",
-      parts: [{ text: "Great to meet you. What would you like to know?" }],
+      parts: [{ text: "你好！我是ChatAI助手，有什么可以帮助你的吗？" }],
     },
   ],
 });

@@ -50,12 +50,12 @@ export const userSchema = z.object({
 // 消息相关 schema
 export const createMessageSchema = z.object({
   conversationId: cuidSchema,
-  role: z.enum(["user", "assistant", "system"]),
+  role: z.enum(["user", "model"]),
   content: z
     .string()
     .trim()
     .min(1, "Content is required")
-    .max(10000, "Content is too long"),
+    .max(300, "Content is too long"),
 });
 
 export const updateMessageSchema = z.object({
@@ -103,7 +103,7 @@ export const updateConversationSchema = z.object({
 export const messageSchema: z.ZodType<any> = z.object({
   id: cuidSchema,
   conversationId: cuidSchema,
-  role: z.enum(["user", "assistant", "system"]),
+  role: z.enum(["user", "model"]),
   content: z.string(),
   createdAt: z.date(),
   updatedAt: z.date(),

@@ -48,7 +48,7 @@ export interface Conversation {
 // 消息相关类型
 export interface CreateMessageData {
   conversationId: string;
-  role: "user" | "assistant" | "system";
+  role: "user" | "model";
   content: string;
 }
 
@@ -59,7 +59,7 @@ export interface UpdateMessageData {
 export interface Message {
   id: string;
   conversationId: string;
-  role: "user" | "assistant" | "system";
+  role: "user" | "model";
   content: string;
   createdAt: Date;
   updatedAt: Date;
