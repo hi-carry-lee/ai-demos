@@ -1,0 +1,181 @@
+---
+description: 配置模板 - Prisma 客户端、环境变量验证、应用入口
+globs: ["**/config/**/*.ts", "**/index.ts"]
+alwaysApply: true
+---
+
+# 配置模板
+
+## Prisma 客户端配置 - config/database.ts
+
+```typescript
+import { PrismaClient } from "@prisma/client";
+import { env } from "./env";
+
+/**
+ * Prisma 客户端单例
+ * 避免在开发环境中创建多个实例
+ */
+const prismaClientSingleton = () => {
+  return new PrismaClient({
+    log:
+      env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
+  });
+};
+
+declare global {
+  var prismaGlobal: undefined | ReturnType<typeof prismaClientSingleton>;
+}
+
+export const prisma = globalThis.prismaGlobal ?? prismaClientSingleton();
+
+if (env.NODE_ENV !== "production") {
+  globalThis.prismaGlobal = prisma;
+}
+
+/**
+ * 优雅关闭
+ */
+export const disconnectDatabase = async (): Promise<void> => {
+  await prisma.$disconnect();
+};
+```
+
+## 环境变量验证 - config/env.ts
+
+```typescript
+import { z } from "zod";
+import dotenv from "dotenv";
+
+// 加载 .env 文件
+dotenv.config();
+
+/**
+ * 环境变量验证 Schema
+ */
+const envSchema = z.object({
+  // 应用配置
+  NODE_ENV: z
+    .enum(["development", "production", "test"])
+    .default("development"),
+  PORT: z.string().transform(Number).default("3000"),
+
+  // 数据库
+  DATABASE_URL: z.string().url("Invalid database URL"),
+
+  // JWT
+  JWT_SECRET: z.string().min(32, "JWT secret must be at least 32 characters"),
+  JWT_EXPIRES_IN: z.string().default("7d"),
+
+  // CORS
+  CORS_ORIGIN: z.string().default("http://localhost:3000"),
+
+  // 可选配置
+  LOG_LEVEL: z.enum(["error", "warn", "info", "debug"]).default("info"),
+});
+
+/**
+ * 验证并导出环境变量
+ */
+export const env = envSchema.parse(process.env);
+
+export type Env = z.infer<typeof envSchema>;
+```
+
+## 应用入口配置 - index.ts
+
+**中间件使用顺序（必须按此顺序）：**
+
+```typescript
+import express from "express";
+import helmet from "helmet";
+import cors from "cors";
+import { env } from "./config/env";
+import { prisma, disconnectDatabase } from "./config/database";
+
+// 中间件导入
+import { requestLogger } from "./shared/middlewares/logger.middleware";
+import { globalLimiter } from "./shared/middlewares/rateLimiter.middleware";
+import { notFound } from "./shared/middlewares/notFound.middleware";
+import { errorHandler } from "./shared/middlewares/errorHandler.middleware";
+
+// 路由导入
+import userRoutes from "./modules/user/user.routes";
+
+const app = express();
+
+// ============================================
+// 1. 安全和基础中间件（最先配置）
+// ============================================
+app.use(helmet()); // 安全头部
+app.use(
+  cors({
+    origin: env.CORS_ORIGIN,
+    credentials: true,
+  })
+);
+app.use(express.json({ limit: "10mb" })); // Body 解析
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+
+// ============================================
+// 2. 日志和限流
+// ============================================
+app.use(requestLogger); // 请求日志
+app.use(globalLimiter); // 全局限流
+
+// ============================================
+// 3. 健康检查
+// ============================================
+app.get("/health", (req, res) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
+// ============================================
+// 4. API 路由
+// ============================================
+app.use("/api/v1/users", userRoutes);
+// 其他路由...
+
+// ============================================
+// 5. 404 处理（放在所有路由之后）
+// ============================================
+app.use(notFound);
+
+// ============================================
+// 6. 错误处理（必须最后配置）
+// ============================================
+app.use(errorHandler);
+
+// ============================================
+// 7. 启动服务器
+// ============================================
+const server = app.listen(env.PORT, () => {
+  console.log(`Server running on port ${env.PORT}`);
+  console.log(`Environment: ${env.NODE_ENV}`);
+});
+
+// ============================================
+// 8. 优雅关闭
+// ============================================
+const gracefulShutdown = async (signal: string) => {
+  console.log(`\n${signal} received, closing server gracefully...`);
+
+  server.close(async () => {
+    console.log("HTTP server closed");
+
+    await disconnectDatabase();
+    console.log("Database disconnected");
+
+    process.exit(0);
+  });
+
+  // 强制退出（30 秒后）
+  setTimeout(() => {
+    console.error("Forced shutdown after timeout");
+    process.exit(1);
+  }, 30000);
+};
+
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+```

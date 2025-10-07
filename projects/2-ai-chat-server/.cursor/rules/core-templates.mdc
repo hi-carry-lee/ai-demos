@@ -1,0 +1,137 @@
+---
+description: 核心模板代码 - ApiResponse, AppError, asyncHandler 等
+globs: ["**/*.ts"]
+alwaysApply: true
+---
+
+# 核心模板代码（使用以下模板保持一致性）
+
+## 统一响应格式 - shared/utils/apiResponse.ts
+
+```typescript
+import { Response } from "express";
+
+interface SuccessResponse<T> {
+  success: true;
+  message: string;
+  data: T;
+}
+
+interface ErrorResponse {
+  success: false;
+  message: string;
+  errors?: any[];
+}
+
+export class ApiResponse {
+  /**
+   * 成功响应
+   * @param res - Express Response 对象
+   * @param data - 响应数据
+   * @param message - 成功消息
+   * @param statusCode - HTTP 状态码（默认 200）
+   */
+  static success<T>(
+    res: Response,
+    data: T,
+    message: string = "Success",
+    statusCode: number = 200
+  ): void {
+    res.status(statusCode).json({
+      success: true,
+      message,
+      data,
+    } as SuccessResponse<T>);
+  }
+
+  /**
+   * 错误响应
+   * @param res - Express Response 对象
+   * @param message - 错误消息
+   * @param statusCode - HTTP 状态码（默认 500）
+   * @param errors - 详细错误信息（可选）
+   */
+  static error(
+    res: Response,
+    message: string,
+    statusCode: number = 500,
+    errors?: any[]
+  ): void {
+    res.status(statusCode).json({
+      success: false,
+      message,
+      errors,
+    } as ErrorResponse);
+  }
+}
+```
+
+**使用方式：**
+
+```typescript
+// 成功响应
+ApiResponse.success(res, user, "User created successfully", 201);
+
+// 错误响应（在 errorHandler 中使用）
+ApiResponse.error(res, "User not found", 404);
+```
+
+## 自定义错误类 - shared/errors/AppError.ts
+
+```typescript
+export class AppError extends Error {
+  public readonly statusCode: number;
+  public readonly errors?: any[];
+
+  constructor(message: string, statusCode: number = 500, errors?: any[]) {
+    super(message);
+    this.statusCode = statusCode;
+    this.errors = errors;
+
+    // 捕获堆栈跟踪
+    Error.captureStackTrace(this, this.constructor);
+
+    // 设置 prototype（TypeScript 继承 Error 需要）
+    Object.setPrototypeOf(this, AppError.prototype);
+  }
+}
+```
+
+**使用方式：**
+
+```typescript
+throw new AppError("User not found", 404);
+throw new AppError("Email already exists", 409);
+throw new AppError("Validation failed", 400, validationErrors);
+```
+
+## 异步错误处理 - shared/utils/asyncHandler.ts
+
+```typescript
+import { Request, Response, NextFunction } from "express";
+
+type AsyncFunction = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => Promise<void>;
+
+/**
+ * 包裹异步函数，自动捕获错误并传递给错误处理中间件
+ */
+export const asyncHandler = (fn: AsyncFunction) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    Promise.resolve(fn(req, res, next)).catch(next);
+  };
+};
+```
+
+**使用方式：**
+
+```typescript
+// 在 Controller 中使用
+createUser = asyncHandler(async (req, res, next) => {
+  const user = await userService.createUser(req.body);
+  ApiResponse.success(res, user, "User created successfully", 201);
+});
+```

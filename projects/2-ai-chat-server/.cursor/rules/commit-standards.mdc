@@ -1,0 +1,64 @@
+---
+description: 提交规范和版本控制最佳实践
+globs: ["**/*"]
+alwaysApply: false
+---
+
+# 提交规范
+
+## 格式：`<type>(<scope>): <subject>`
+
+### 类型：
+
+- **feat** - 新功能
+- **fix** - 修复 bug
+- **refactor** - 重构
+- **docs** - 文档
+- **test** - 测试
+- **chore** - 构建/工具
+
+### 示例：
+
+```
+feat(user): add user registration endpoint
+fix(auth): resolve JWT token expiration issue
+refactor(database): optimize user query performance
+docs(api): update authentication documentation
+test(user): add unit tests for user service
+chore(deps): update express to version 5.x
+```
+
+## 版本控制最佳实践
+
+### 分支策略
+
+- `main` - 生产环境代码
+- `develop` - 开发环境代码
+- `feature/*` - 功能分支
+- `hotfix/*` - 紧急修复分支
+
+### 提交频率
+
+- 小步提交，频繁推送
+- 每个提交应该是一个完整的功能点
+- 避免大型提交，难以回滚和审查
+
+### 提交信息质量
+
+- 使用现在时态："add feature" 而不是 "added feature"
+- 首行不超过 50 字符
+- 如需详细说明，空一行后添加详细描述
+- 引用相关的 issue 或 PR 编号
+
+### 示例完整提交信息：
+
+```
+feat(user): add email verification system
+
+- Add email verification endpoint
+- Implement email template system
+- Add verification token generation
+- Update user model with verification status
+
+Closes #123
+```

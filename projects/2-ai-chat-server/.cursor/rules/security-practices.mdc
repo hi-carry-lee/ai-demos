@@ -1,0 +1,141 @@
+---
+description: 安全最佳实践 - 密码处理、JWT 使用、HTTP 状态码
+globs: ["**/*.ts"]
+alwaysApply: true
+---
+
+# 安全最佳实践
+
+## 1. 密码处理
+
+```typescript
+import bcrypt from "bcrypt";
+
+// 加密（12 rounds）
+const hashed = await bcrypt.hash(password, 12);
+
+// 验证
+const isValid = await bcrypt.compare(password, hashedPassword);
+```
+
+## 2. JWT 使用
+
+```typescript
+import jwt from "jsonwebtoken";
+
+// 生成 token
+const token = jwt.sign({ id, email }, env.JWT_SECRET, {
+  expiresIn: env.JWT_EXPIRES_IN,
+});
+
+// 验证 token（在 auth middleware 中）
+const decoded = jwt.verify(token, env.JWT_SECRET);
+```
+
+## HTTP 状态码使用
+
+- **200** - 成功（GET, PATCH）
+- **201** - 创建成功（POST）
+- **204** - 无内容（DELETE）
+- **400** - 请求错误（验证失败）
+- **401** - 未授权（未登录）
+- **403** - 禁止访问（无权限）
+- **404** - 资源不存在
+- **409** - 冲突（唯一约束）
+- **500** - 服务器错误
+
+## 错误处理层级
+
+### 不同场景的错误处理策略
+
+#### 1️⃣ 用户可见的错误（400, 404, 409 等）
+
+**原则：提供友好的中文提示**
+
+```typescript
+// ✅ 正确：友好的提示
+throw new AppError("该邮箱已被注册，请使用其他邮箱", 409);
+throw new AppError("用户不存在", 404);
+
+// ❌ 错误：技术性提示
+throw new AppError("Unique constraint violation on email", 409);
+throw new AppError("User not found in database", 404);
+```
+
+#### 2️⃣ 预期内的业务错误
+
+**原则：抛出错误，但不记录堆栈**
+
+```typescript
+// ✅ 正确：预期内的错误
+const user = await userRepository.findByEmail(email);
+if (!user) {
+  throw new AppError("用户不存在", 404); // 不需要 console.error
+}
+
+// ✅ 正确：密码错误（预期内）
+const isValid = await bcrypt.compare(password, user.password);
+if (!isValid) {
+  throw new AppError("密码错误", 401);
+}
+```
+
+#### 3️⃣ 意外的系统错误
+
+**原则：记录完整堆栈，生产环境隐藏细节**
+
+```typescript
+// ✅ 正确：在 errorHandler 中处理
+export const errorHandler = (err, req, res, next) => {
+  // 记录错误（包括堆栈）
+  console.error("Error:", err);
+
+  // 生产环境不暴露细节
+  const message =
+    env.NODE_ENV === "production" ? "Internal server error" : err.message;
+
+  ApiResponse.error(res, message, 500);
+};
+```
+
+#### 4️⃣ 第三方服务错误
+
+**原则：转换为友好提示，记录原始错误**
+
+```typescript
+// ✅ 正确：捕获并转换
+try {
+  await emailService.send(to, subject, body);
+} catch (error) {
+  console.error("Email service error:", error); // 记录原始错误
+  throw new AppError("发送邮件失败，请稍后重试", 500); // 友好提示
+}
+```
+
+#### 5️⃣ 敏感信息保护
+
+**禁止在错误信息中暴露：**
+
+- ❌ 数据库连接字符串
+- ❌ JWT Secret
+- ❌ 完整的 SQL 查询
+- ❌ 文件系统路径
+- ❌ 用户的完整密码（即使是哈希）
+
+```typescript
+// ❌ 错误：暴露敏感信息
+throw new AppError(`Database connection failed: ${DATABASE_URL}`, 500);
+
+// ✅ 正确：隐藏细节
+console.error("Database connection failed:", error); // 只在服务端日志
+throw new AppError("数据库连接失败", 500); // 用户看到的
+```
+
+## 注意事项
+
+- 永远不要硬编码敏感信息
+- 始终验证用户输入
+- 使用环境变量管理配置
+- 不提交 .env 到版本控制
+- 定期更新依赖包
+- 记录重要操作日志

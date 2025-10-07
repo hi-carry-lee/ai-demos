@@ -1,0 +1,215 @@
+---
+description: Prisma 最佳实践 - Schema 设计和查询优化
+globs: ["**/prisma/**/*.prisma", "**/*.repository.ts"]
+alwaysApply: true
+---
+
+# Prisma 最佳实践
+
+## Schema 设计
+
+- **表名**：复数形式，使用 `@@map("users")`
+- **字段**：camelCase，映射到 snake_case（`@map("created_at")`）
+- **索引**：常查询字段添加 `@@index()`
+- **关系**：使用 `onDelete: Cascade` 或 `SetNull`
+- **ID**：使用 `@default(uuid())` 或 `@default(cuid())`
+- **时间戳**：`createdAt @default(now())`, `updatedAt @updatedAt`
+
+## 查询优化
+
+- **避免 N+1**：使用 include
+- **明确字段**：使用 select
+- **排除敏感字段**：在 Repository 层
+- **分页**：skip + take + 总数
+
+## 示例 Schema
+
+```prisma
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // 关系
+  posts Post[]
+
+  @@map("users")
+  @@index([email])
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  title     String
+  content   String?
+  published Boolean  @default(false)
+  authorId  String   @map("author_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // 关系
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@map("posts")
+  @@index([authorId])
+  @@index([published])
+}
+```
+
+## Repository 示例
+
+```typescript
+import { prisma } from "@/config/database";
+import { Prisma } from "@prisma/client";
+
+export class UserRepository {
+  /**
+   * 创建用户（排除敏感字段）
+   */
+  static async create(data: Prisma.UserCreateInput) {
+    return await prisma.user.create({
+      data,
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        createdAt: true,
+        updatedAt: true,
+        // password: false // 不选择敏感字段
+      },
+    });
+  }
+
+  /**
+   * 根据 ID 查找用户
+   */
+  static async findById(id: string) {
+    return await prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+  }
+
+  /**
+   * 根据邮箱查找用户（包含密码，用于登录验证）
+   */
+  static async findByEmailWithPassword(email: string) {
+    return await prisma.user.findUnique({
+      where: { email },
+      // 登录时需要密码进行验证
+    });
+  }
+
+  /**
+   * 分页查询用户
+   */
+  static async findMany(page: number = 1, limit: number = 20) {
+    const skip = (page - 1) * limit;
+
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.user.count(),
+    ]);
+
+    return {
+      users,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  /**
+   * 更新用户
+   */
+  static async update(id: string, data: Prisma.UserUpdateInput) {
+    return await prisma.user.update({
+      where: { id },
+      data,
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+  }
+
+  /**
+   * 删除用户
+   */
+  static async delete(id: string) {
+    return await prisma.user.delete({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+      },
+    });
+  }
+
+  /**
+   * 检查邮箱是否存在
+   */
+  static async existsByEmail(email: string): Promise<boolean> {
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+    return !!user;
+  }
+}
+```
+
+## 事务示例
+
+```typescript
+// 复杂业务使用事务
+static async createUserWithProfile(userData: CreateUserInput, profileData: CreateProfileInput) {
+  return await prisma.$transaction(async (tx) => {
+    // 创建用户
+    const user = await tx.user.create({
+      data: userData,
+      select: {
+        id: true,
+        email: true,
+        name: true,
+      },
+    });
+
+    // 创建用户资料
+    const profile = await tx.profile.create({
+      data: {
+        ...profileData,
+        userId: user.id,
+      },
+    });
+
+    return { user, profile };
+  });
+}
+```

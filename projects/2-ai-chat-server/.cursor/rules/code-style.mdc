@@ -1,0 +1,93 @@
+---
+description: 代码风格、TypeScript 规范和命名约定
+globs: ["**/*.ts", "**/*.tsx"]
+alwaysApply: true
+---
+
+# 代码风格与质量
+
+## TypeScript 规范
+
+- 使用 strict mode，启用所有严格类型检查
+- 优先使用 interface 定义对象结构，使用 type 定义联合类型
+- 禁止使用 any，必要时使用 unknown
+- 所有函数必须显式声明返回类型
+- 使用 ES Modules (import/export)
+
+## 命名规范
+
+- **文件名**: kebab-case 或 dot-case (user.service.ts)
+- **类名**: PascalCase (UserService)
+- **函数/变量**: camelCase (getUserById)
+- **常量**: UPPER_SNAKE_CASE (JWT_SECRET)
+- **接口/类型**: PascalCase，不使用 I 前缀
+
+## 导入顺序
+
+1. Node 内置模块
+2. 第三方依赖
+3. Prisma 客户端
+4. 项目内部模块（使用 @/）
+5. 各组之间空一行
+
+## 项目结构（模块化 - 中小型优化）
+
+```
+src/
+├── modules/                # 业务模块
+│   └── user/
+│       ├── user.schema.ts     # Zod 验证 + 类型定义（可合并）
+│       ├── user.repository.ts # 数据库操作
+│       ├── user.service.ts    # 业务逻辑
+│       ├── user.controller.ts # HTTP 处理
+│       └── user.routes.ts     # 路由定义
+├── shared/
+│   ├── middlewares/        # 中间件（使用下面的模板）
+│   ├── utils/             # 工具函数（使用下面的模板）
+│   ├── errors/            # 错误类（使用下面的模板）
+│   └── types/             # 全局类型
+├── config/
+│   ├── env.ts             # 环境变量验证
+│   └── database.ts        # Prisma 客户端
+└── index.ts               # 应用入口
+```
+
+## 代码生成后自检
+
+生成代码后必须自动检查以下项目：
+
+### ✅ 模板代码使用检查
+
+- Controller 是否使用 ApiResponse.success() 和 asyncHandler？
+- Service 是否使用 AppError 抛出错误？
+- 是否有直接使用 res.json() 的地方？（应该用 ApiResponse）
+- 是否有 try-catch 包裹的 Controller？（应该用 asyncHandler）
+
+### ✅ 类型安全检查
+
+- 所有函数是否有明确的返回类型？
+- 是否有 any 类型？（应该用 unknown 或具体类型）
+- Request 类型是否完整？如 Request<Params, ResBody, ReqBody>
+
+### ✅ 错误处理检查
+
+- Repository 是否有 try-catch？（不应该有，让错误向上传递）
+- Service 是否在合适的地方抛出 AppError？
+- 是否有未处理的异步错误？
+
+### ✅ 代码完整性检查
+
+- 是否有占位符？如 // TODO, // ... rest of code（禁止）
+- 导入语句是否完整？
+- 是否有硬编码的配置？（应该用 env.XXX）
+
+### ✅ 命名规范检查
+
+- 文件名是否符合 kebab-case？
+- 类名是否符合 PascalCase？
+- 函数/变量是否符合 camelCase？
+
+**如果检查发现问题：**
+
+- 立即修正，不要等我指出
+- 如果是设计决策，说明原因

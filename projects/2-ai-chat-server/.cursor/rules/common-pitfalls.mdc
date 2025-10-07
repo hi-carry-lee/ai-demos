@@ -1,0 +1,175 @@
+---
+description: 常见陷阱提醒 - Express + TypeScript + Prisma 开发中的常见错误
+globs: ["**/*.ts"]
+alwaysApply: true
+---
+
+# 常见陷阱提醒
+
+## Express + TypeScript + Prisma 常见错误
+
+### ❌ 陷阱 1：忘记 await
+
+```typescript
+// ❌ 错误：忘记 await
+const user = userRepository.findById(id); // 返回 Promise，不是 User
+if (!user) { ... } // 永远不会为 null
+
+// ✅ 正确
+const user = await userRepository.findById(id);
+```
+
+### ❌ 陷阱 2：errorHandler 后继续执行
+
+```typescript
+// ❌ 错误：没有 return
+if (!user) {
+  ApiResponse.error(res, "User not found", 404);
+  // 继续执行，可能导致 "Cannot set headers after they are sent"
+}
+
+// ✅ 正确：使用 throw（会被 asyncHandler 捕获）
+if (!user) {
+  throw new AppError("User not found", 404);
+}
+```
+
+### ❌ 陷阱 3：Prisma select 忘记排除敏感字段
+
+```typescript
+// ❌ 错误：返回了密码
+const user = await prisma.user.findUnique({
+  where: { id },
+});
+
+// ✅ 正确：排除敏感字段
+const user = await prisma.user.findUnique({
+  where: { id },
+  select: {
+    id: true,
+    email: true,
+    name: true,
+    // password: false // 不选择
+  },
+});
+```
+
+### ❌ 陷阱 4：中间件忘记调用 next()
+
+```typescript
+// ❌ 错误：请求会挂起
+export const myMiddleware = (req, res, next) => {
+  console.log("Doing something...");
+  // 忘记调用 next()
+};
+
+// ✅ 正确
+export const myMiddleware = (req, res, next) => {
+  console.log("Doing something...");
+  next(); // 继续执行下一个中间件
+};
+```
+
+### ❌ 陷阱 5：JWT Secret 太短或硬编码
+
+```typescript
+// ❌ 错误：硬编码或太短
+const token = jwt.sign(payload, 'secret123', { ... });
+
+// ✅ 正确：从环境变量读取，至少 32 字符
+const token = jwt.sign(payload, env.JWT_SECRET, { ... });
+```
+
+### ❌ 陷阱 6：Zod schema 没有覆盖所有输入
+
+```typescript
+// ❌ 错误：只验证 body
+export const createUserSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8),
+});
+
+// ✅ 正确：明确指定来源
+export const createUserSchema = z.object({
+  body: z.object({
+    email: z.string().email(),
+    password: z.string().min(8),
+  }),
+  // params 和 query 也可以验证
+});
+```
+
+### ❌ 陷阱 7：Prisma 事务中使用外部 prisma
+
+```typescript
+// ❌ 错误：事务内使用外部 prisma
+await prisma.$transaction(async (tx) => {
+  await prisma.user.create({ data }); // 错误！不在事务内
+});
+
+// ✅ 正确：使用事务参数
+await prisma.$transaction(async (tx) => {
+  await tx.user.create({ data }); // 正确
+});
+```
+
+### ❌ 陷阱 8：async 函数没有用 asyncHandler 包裹
+
+```typescript
+// ❌ 错误：错误不会被捕获
+router.get("/users", async (req, res) => {
+  const users = await userService.getUsers();
+  res.json(users);
+});
+
+// ✅ 正确：使用 asyncHandler
+router.get(
+  "/users",
+  asyncHandler(async (req, res) => {
+    const users = await userService.getUsers();
+    ApiResponse.success(res, users);
+  })
+);
+```
+
+### ❌ 陷阱 9：环境变量未验证直接使用
+
+```typescript
+// ❌ 错误：直接使用 process.env（可能是 undefined）
+const port = process.env.PORT;
+app.listen(port); // 可能崩溃
+
+// ✅ 正确：使用验证后的 env
+import { env } from "@/config/env";
+app.listen(env.PORT); // 类型安全，保证有值
+```
+
+### ❌ 陷阱 10：console.log 忘记清理
+
+```typescript
+// ❌ 错误：调试用的 console.log 提交到代码
+console.log("User data:", user);
+console.log("Password:", password); // 更严重！
+
+// ✅ 正确：使用合适的日志级别
+logger.debug("User data:", user);
+// 生产环境不输出 debug 日志
+```
+
+## 使用这些规则
+
+### 在生成代码前：
+
+- 回顾"渐进式开发指导"，判断是扩展还是新建
+- 检查"常见陷阱提醒"，避免踩坑
+
+### 在生成代码后：
+
+- 执行"代码生成后自检"清单
+- 确保"错误处理层级"符合场景
+
+### 当遇到问题时：
+
+- 重新阅读相关规范
+- 如果是常见陷阱，直接修正
+- 如果是新问题，分析根本原因后再修复

@@ -1,0 +1,270 @@
+---
+description: 中间件模板 - 错误处理、验证、认证、日志等
+globs: ["**/middlewares/**/*.ts", "**/*.middleware.ts"]
+alwaysApply: true
+---
+
+# 中间件模板
+
+## 错误处理中间件 - shared/middlewares/errorHandler.middleware.ts
+
+```typescript
+import { Request, Response, NextFunction } from "express";
+import { AppError } from "@/shared/errors/AppError";
+import { Prisma } from "@prisma/client";
+import { ApiResponse } from "@/shared/utils/apiResponse";
+
+/**
+ * 全局错误处理中间件
+ * 必须放在所有路由之后
+ */
+export const errorHandler = (
+  err: Error,
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  // 记录错误
+  console.error("Error:", err);
+
+  // 1. 自定义应用错误
+  if (err instanceof AppError) {
+    ApiResponse.error(res, err.message, err.statusCode, err.errors);
+    return;
+  }
+
+  // 2. Prisma 错误处理
+  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    // P2002: 唯一约束冲突
+    if (err.code === "P2002") {
+      ApiResponse.error(res, "Resource already exists", 409);
+      return;
+    }
+    // P2025: 记录不存在
+    if (err.code === "P2025") {
+      ApiResponse.error(res, "Resource not found", 404);
+      return;
+    }
+  }
+
+  // 3. Zod 验证错误（虽然应该在 validate 中间件处理，但作为后备）
+  if (err.name === "ZodError") {
+    ApiResponse.error(res, "Validation failed", 400);
+    return;
+  }
+
+  // 4. 默认服务器错误
+  ApiResponse.error(
+    res,
+    process.env.NODE_ENV === "production"
+      ? "Internal server error"
+      : err.message,
+    500
+  );
+};
+```
+
+## 验证中间件 - shared/middlewares/validate.middleware.ts
+
+```typescript
+import { Request, Response, NextFunction } from "express";
+import { AnyZodObject, ZodError } from "zod";
+import { AppError } from "@/shared/errors/AppError";
+
+/**
+ * Zod 验证中间件
+ * @param schema - Zod schema 对象
+ */
+export const validate = (schema: AnyZodObject) => {
+  return async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      await schema.parseAsync({
+        body: req.body,
+        query: req.query,
+        params: req.params,
+      });
+      next();
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const errors = error.errors.map((e) => ({
+          path: e.path.join("."),
+          message: e.message,
+        }));
+        next(new AppError("Validation failed", 400, errors));
+      } else {
+        next(error);
+      }
+    }
+  };
+};
+```
+
+## 认证中间件 - shared/middlewares/auth.middleware.ts
+
+```typescript
+import { Request, Response, NextFunction } from "express";
+import jwt from "jsonwebtoken";
+import { AppError } from "@/shared/errors/AppError";
+import { env } from "@/config/env";
+
+// 扩展 Express Request 类型
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        id: string;
+        email: string;
+        [key: string]: any;
+      };
+    }
+  }
+}
+
+/**
+ * JWT 认证中间件
+ * 验证 Authorization header 中的 Bearer token
+ */
+export const authenticate = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    // 1. 获取 token
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      throw new AppError("Authentication required", 401);
+    }
+
+    const token = authHeader.substring(7); // 移除 "Bearer " 前缀
+
+    // 2. 验证 token
+    const decoded = jwt.verify(token, env.JWT_SECRET) as {
+      id: string;
+      email: string;
+      [key: string]: any;
+    };
+
+    // 3. 将用户信息附加到 request
+    req.user = decoded;
+
+    next();
+  } catch (error) {
+    if (error instanceof jwt.JsonWebTokenError) {
+      next(new AppError("Invalid token", 401));
+    } else if (error instanceof jwt.TokenExpiredError) {
+      next(new AppError("Token expired", 401));
+    } else {
+      next(error);
+    }
+  }
+};
+
+/**
+ * 可选认证中间件
+ * 如果有 token 则验证，没有则继续（不抛出错误）
+ */
+export const optionalAuth = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      const token = authHeader.substring(7);
+      const decoded = jwt.verify(token, env.JWT_SECRET) as any;
+      req.user = decoded;
+    }
+
+    next();
+  } catch (error) {
+    // 忽略错误，继续执行
+    next();
+  }
+};
+```
+
+## 请求日志中间件 - shared/middlewares/logger.middleware.ts
+
+```typescript
+import { Request, Response, NextFunction } from "express";
+
+/**
+ * 请求日志中间件
+ * 记录请求方法、URL、响应时间和状态码
+ */
+export const requestLogger = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  const startTime = Date.now();
+
+  // 监听响应完成
+  res.on("finish", () => {
+    const duration = Date.now() - startTime;
+    const { method, originalUrl } = req;
+    const { statusCode } = res;
+
+    console.log(
+      `[${new Date().toISOString()}] ${method} ${originalUrl} ${statusCode} - ${duration}ms`
+    );
+  });
+
+  next();
+};
+```
+
+## 404 处理中间件 - shared/middlewares/notFound.middleware.ts
+
+```typescript
+import { Request, Response, NextFunction } from "express";
+import { AppError } from "@/shared/errors/AppError";
+
+/**
+ * 404 处理中间件
+ * 放在所有路由之后，errorHandler 之前
+ */
+export const notFound = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  next(new AppError(`Route ${req.originalUrl} not found`, 404));
+};
+```
+
+## 限流中间件 - shared/middlewares/rateLimiter.middleware.ts
+
+```typescript
+import rateLimit from "express-rate-limit";
+
+/**
+ * 全局限流配置
+ * 15 分钟内最多 100 次请求
+ */
+export const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 分钟
+  max: 100, // 最多 100 次请求
+  message: "Too many requests from this IP, please try again later",
+  standardHeaders: true, // 返回 RateLimit-* headers
+  legacyHeaders: false,
+});
+
+/**
+ * 登录接口限流
+ * 15 分钟内最多 5 次请求
+ */
+export const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: "Too many login attempts, please try again later",
+  skipSuccessfulRequests: true, // 成功的请求不计数
+});
+```
