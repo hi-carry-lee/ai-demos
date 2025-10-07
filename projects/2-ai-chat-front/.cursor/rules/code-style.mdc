@@ -1,0 +1,194 @@
+---
+description: React + TypeScript 代码风格和命名规范
+globs: ['**/*.tsx', '**/*.ts', '**/*.jsx', '**/*.js']
+alwaysApply: true
+---
+
+# React + TypeScript 代码风格与质量
+
+## TypeScript 规范
+
+- 使用 strict mode，启用所有严格类型检查
+- 优先使用 interface 定义对象结构，使用 type 定义联合类型
+- 禁止使用 any，必要时使用 unknown
+- 所有函数必须显式声明返回类型
+- 使用 ES Modules (import/export)
+
+## 命名规范
+
+- **文件名**: kebab-case 或 PascalCase
+  - 组件文件: `UserProfile.tsx`, `user-profile.tsx`
+  - Hook 文件: `useUserData.ts`, `use-user-data.ts`
+  - 工具文件: `formatDate.ts`, `api-client.ts`
+- **组件名**: PascalCase (`UserProfile`, `LoginForm`)
+- **函数/变量**: camelCase (`getUserById`, `isLoading`)
+- **常量**: UPPER_SNAKE_CASE (`API_BASE_URL`, `MAX_RETRY_COUNT`)
+- **接口/类型**: PascalCase，不使用 I 前缀 (`User`, `ApiResponse`)
+
+## 导入顺序
+
+1. React 相关导入
+2. 第三方库导入
+3. 项目内部模块（使用 @/ 别名）
+4. 相对路径导入
+5. 各组之间空一行
+
+```typescript
+// ✅ 正确的导入顺序
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/useAuth';
+import { User } from '@/types/user';
+
+import './UserProfile.css';
+```
+
+## 组件开发规范
+
+### 函数组件结构
+
+```typescript
+// ✅ 推荐的组件结构
+interface UserProfileProps {
+  userId: string;
+  onEdit?: (user: User) => void;
+  className?: string;
+}
+
+export const UserProfile: React.FC<UserProfileProps> = ({
+  userId,
+  onEdit,
+  className,
+}) => {
+  // 1. Hooks 调用
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const { user: currentUser } = useAuth();
+
+  // 2. 副作用
+  useEffect(() => {
+    fetchUser();
+  }, [userId]);
+
+  // 3. 事件处理函数
+  const handleEdit = useCallback(() => {
+    if (user && onEdit) {
+      onEdit(user);
+    }
+  }, [user, onEdit]);
+
+  // 4. 渲染逻辑
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!user) {
+    return <div>User not found</div>;
+  }
+
+  return <div className={cn('user-profile', className)}>{/* JSX 内容 */}</div>;
+};
+```
+
+### Props 类型定义
+
+```typescript
+// ✅ 推荐：使用 interface 定义 Props
+interface ButtonProps {
+  variant?: 'primary' | 'secondary' | 'outline';
+  size?: 'sm' | 'md' | 'lg';
+  disabled?: boolean;
+  children: React.ReactNode;
+  onClick?: () => void;
+  className?: string;
+}
+
+// ✅ 推荐：扩展 HTML 属性
+interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  label?: string;
+  error?: string;
+  helperText?: string;
+}
+```
+
+### 自定义 Hook 规范
+
+```typescript
+// ✅ 自定义 Hook 命名以 use 开头
+export const useUserData = (userId: string) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchUser = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const userData = await userService.getUser(userId);
+      setUser(userData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    fetchUser();
+  }, [fetchUser]);
+
+  return {
+    user,
+    isLoading,
+    error,
+    refetch: fetchUser,
+  };
+};
+```
+
+## 代码生成后自检
+
+生成代码后必须自动检查以下项目：
+
+### ✅ TypeScript 类型检查
+
+- 所有函数是否有明确的返回类型？
+- 是否有 any 类型？（应该用 unknown 或具体类型）
+- Props 类型是否完整？
+- 是否使用了正确的 React 类型？
+
+### ✅ React 最佳实践检查
+
+- 是否正确使用了 useEffect 依赖数组？
+- 是否合理使用了 useMemo 和 useCallback？
+- 组件是否遵循单一职责原则？
+- 是否有不必要的重新渲染？
+
+### ✅ 代码完整性检查
+
+- 是否有占位符？如 // TODO, // ... rest of code（禁止）
+- 导入语句是否完整？
+- 是否有硬编码的配置？（应该用环境变量或常量）
+
+### ✅ 命名规范检查
+
+- 文件名是否符合规范？
+- 组件名是否符合 PascalCase？
+- 函数/变量是否符合 camelCase？
+- 常量是否符合 UPPER_SNAKE_CASE？
+
+### ✅ 可访问性检查
+
+- 是否使用了语义化 HTML 标签？
+- 是否添加了必要的 aria 属性？
+- 是否考虑了键盘导航？
+- 颜色对比度是否足够？
+
+**如果检查发现问题：**
+
+- 立即修正，不要等我指出
+- 如果是设计决策，说明原因
+- 确保代码符合 React 和 TypeScript 最佳实践

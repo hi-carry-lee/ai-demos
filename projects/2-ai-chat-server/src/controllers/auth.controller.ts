@@ -1,6 +1,6 @@
-import type { Request, Response } from "express";
-import { AuthService } from "../services/auth.service.js";
-import { registerUserSchema, loginUserSchema } from "../lib/validations.js";
+import type { Request, Response } from 'express';
+import { registerUserSchema, loginUserSchema } from '../lib/validations.js';
+import { AuthService } from '../services/auth.service.js';
 
 export class AuthController {
   /**
@@ -14,9 +14,9 @@ export class AuthController {
       if (!validationResult.success) {
         return res.status(400).json({
           success: false,
-          error: "请求数据验证失败",
-          details: validationResult.error.errors.map((err) => ({
-            field: err.path.join("."),
+          error: '请求数据验证失败',
+          details: validationResult.error.errors.map(err => ({
+            field: err.path.join('.'),
             message: err.message,
           })),
         });
@@ -33,7 +33,7 @@ export class AuthController {
 
       res.status(201).json({
         success: true,
-        message: "注册成功",
+        message: '注册成功',
         data: {
           user: result.user,
           token: result.token,
@@ -41,10 +41,10 @@ export class AuthController {
       });
       return;
     } catch (error) {
-      console.error("注册控制器错误:", error);
+      console.error('注册控制器错误:', error);
       res.status(500).json({
         success: false,
-        error: "服务器内部错误",
+        error: '服务器内部错误',
       });
       return;
     }
@@ -61,9 +61,9 @@ export class AuthController {
       if (!validationResult.success) {
         return res.status(400).json({
           success: false,
-          error: "请求数据验证失败",
-          details: validationResult.error.errors.map((err) => ({
-            field: err.path.join("."),
+          error: '请求数据验证失败',
+          details: validationResult.error.errors.map(err => ({
+            field: err.path.join('.'),
             message: err.message,
           })),
         });
@@ -80,7 +80,7 @@ export class AuthController {
 
       res.json({
         success: true,
-        message: "登录成功",
+        message: '登录成功',
         data: {
           user: result.user,
           token: result.token,
@@ -88,10 +88,10 @@ export class AuthController {
       });
       return;
     } catch (error) {
-      console.error("登录控制器错误:", error);
+      console.error('登录控制器错误:', error);
       res.status(500).json({
         success: false,
-        error: "服务器内部错误",
+        error: '服务器内部错误',
       });
       return;
     }

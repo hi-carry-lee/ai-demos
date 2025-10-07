@@ -1,7 +1,6 @@
 ---
 description: 代码风格、TypeScript 规范和命名约定
-globs: ["**/*.ts", "**/*.tsx"]
-alwaysApply: true
+alwaysApply: false
 ---
 
 # 代码风格与质量

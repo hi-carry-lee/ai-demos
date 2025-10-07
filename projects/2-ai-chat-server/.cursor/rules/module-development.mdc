@@ -1,15 +1,6 @@
 ---
 description: 模块开发标准流程和各层职责规范
-globs:
-  [
-    "**/modules/**/*.ts",
-    "**/*.schema.ts",
-    "**/*.repository.ts",
-    "**/*.service.ts",
-    "**/*.controller.ts",
-    "**/*.routes.ts",
-  ]
-alwaysApply: true
+alwaysApply: false
 ---
 
 # 模块开发标准流程
@@ -29,26 +20,26 @@ alwaysApply: true
 合并 Zod schema 和类型定义（中小型项目推荐）
 
 ```typescript
-import { z } from "zod";
+import { z } from 'zod';
 
 // Zod 验证 schema
 export const createUserSchema = z.object({
   body: z.object({
-    email: z.string().email("Invalid email format"),
-    password: z.string().min(8, "Password must be at least 8 characters"),
+    email: z.string().email('Invalid email format'),
+    password: z.string().min(8, 'Password must be at least 8 characters'),
     name: z.string().min(2).max(50),
   }),
 });
 
 export const getUserSchema = z.object({
   params: z.object({
-    id: z.string().uuid("Invalid user ID"),
+    id: z.string().uuid('Invalid user ID'),
   }),
 });
 
 // 从 Zod 推导类型
-export type CreateUserInput = z.infer<typeof createUserSchema>["body"];
-export type GetUserParams = z.infer<typeof getUserSchema>["params"];
+export type CreateUserInput = z.infer<typeof createUserSchema>['body'];
+export type GetUserParams = z.infer<typeof getUserSchema>['params'];
 ```
 
 ### 2. Repository 层
@@ -87,7 +78,7 @@ export type GetUserParams = z.infer<typeof getUserSchema>["params"];
 
 ```typescript
 router.patch(
-  "/:id",
+  '/:id',
   authenticate, // 先验证登录，如果需要的话
   validate(updateUserSchema), // ← 再使用 updateUserSchema
   userController.updateUser

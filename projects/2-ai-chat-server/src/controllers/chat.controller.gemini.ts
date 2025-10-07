@@ -1,6 +1,6 @@
-import type { Request, Response } from "express";
-import { singleTurnChat, multiTurnChat } from "../ai/geminiChat.js";
-import { chatRequestSchema } from "../lib/validations.js";
+import type { Request, Response } from 'express';
+import { singleTurnChat, multiTurnChat } from '../ai/geminiChat.js';
+import { chatRequestSchema } from '../lib/validations.js';
 
 export const chatOnetimeGemini = async (
   req: Request,
@@ -19,10 +19,10 @@ export const chatOnetimeGemini = async (
     const response = await singleTurnChat(parseResult.data.message);
     res.json({ response });
   } catch (error) {
-    console.error("Chat controller error:", error);
+    console.error('Chat controller error:', error);
     res.status(500).json({
-      error: "Internal server error",
-      message: error instanceof Error ? error.message : "Unknown error",
+      error: 'Internal server error',
+      message: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 };
@@ -36,10 +36,10 @@ export const chatWithHistoryGemini = async (
     const response = await multiTurnChat(message);
     res.json({ response });
   } catch (error) {
-    console.error("Chat controller error:", error);
+    console.error('Chat controller error:', error);
     res.status(500).json({
-      error: "Internal server error",
-      message: error instanceof Error ? error.message : "Unknown error",
+      error: 'Internal server error',
+      message: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 };

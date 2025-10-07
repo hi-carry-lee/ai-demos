@@ -1,7 +1,6 @@
 ---
 description: 常见陷阱提醒 - Express + TypeScript + Prisma 开发中的常见错误
-globs: ["**/*.ts"]
-alwaysApply: true
+alwaysApply: false
 ---
 
 # 常见陷阱提醒
@@ -24,13 +23,13 @@ const user = await userRepository.findById(id);
 ```typescript
 // ❌ 错误：没有 return
 if (!user) {
-  ApiResponse.error(res, "User not found", 404);
+  ApiResponse.error(res, 'User not found', 404);
   // 继续执行，可能导致 "Cannot set headers after they are sent"
 }
 
 // ✅ 正确：使用 throw（会被 asyncHandler 捕获）
 if (!user) {
-  throw new AppError("User not found", 404);
+  throw new AppError('User not found', 404);
 }
 ```
 
@@ -59,13 +58,13 @@ const user = await prisma.user.findUnique({
 ```typescript
 // ❌ 错误：请求会挂起
 export const myMiddleware = (req, res, next) => {
-  console.log("Doing something...");
+  console.log('Doing something...');
   // 忘记调用 next()
 };
 
 // ✅ 正确
 export const myMiddleware = (req, res, next) => {
-  console.log("Doing something...");
+  console.log('Doing something...');
   next(); // 继续执行下一个中间件
 };
 ```
@@ -103,12 +102,12 @@ export const createUserSchema = z.object({
 
 ```typescript
 // ❌ 错误：事务内使用外部 prisma
-await prisma.$transaction(async (tx) => {
+await prisma.$transaction(async tx => {
   await prisma.user.create({ data }); // 错误！不在事务内
 });
 
 // ✅ 正确：使用事务参数
-await prisma.$transaction(async (tx) => {
+await prisma.$transaction(async tx => {
   await tx.user.create({ data }); // 正确
 });
 ```
@@ -117,14 +116,14 @@ await prisma.$transaction(async (tx) => {
 
 ```typescript
 // ❌ 错误：错误不会被捕获
-router.get("/users", async (req, res) => {
+router.get('/users', async (req, res) => {
   const users = await userService.getUsers();
   res.json(users);
 });
 
 // ✅ 正确：使用 asyncHandler
 router.get(
-  "/users",
+  '/users',
   asyncHandler(async (req, res) => {
     const users = await userService.getUsers();
     ApiResponse.success(res, users);
@@ -140,7 +139,7 @@ const port = process.env.PORT;
 app.listen(port); // 可能崩溃
 
 // ✅ 正确：使用验证后的 env
-import { env } from "@/config/env";
+import { env } from '@/config/env';
 app.listen(env.PORT); // 类型安全，保证有值
 ```
 
@@ -148,11 +147,11 @@ app.listen(env.PORT); // 类型安全，保证有值
 
 ```typescript
 // ❌ 错误：调试用的 console.log 提交到代码
-console.log("User data:", user);
-console.log("Password:", password); // 更严重！
+console.log('User data:', user);
+console.log('Password:', password); // 更严重！
 
 // ✅ 正确：使用合适的日志级别
-logger.debug("User data:", user);
+logger.debug('User data:', user);
 // 生产环境不输出 debug 日志
 ```
 

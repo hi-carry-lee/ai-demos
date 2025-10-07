@@ -1,9 +1,9 @@
-import { MessageRepository } from "../repositories/message.repository.js";
-import { ConversationService } from "./conversation.service.js";
+import { MessageRepository } from '../repositories/message.repository.js';
 import type {
   CreateMessageData,
   UpdateMessageData,
-} from "../types/database.js";
+} from '../types/database.js';
+import { ConversationService } from './conversation.service.js';
 
 export class MessageService {
   /**
@@ -14,7 +14,7 @@ export class MessageService {
     const conversationExists =
       await ConversationService.validateConversationExists(data.conversationId);
     if (!conversationExists) {
-      throw new Error("会话不存在");
+      throw new Error('会话不存在');
     }
 
     // 插入消息
@@ -45,7 +45,7 @@ export class MessageService {
     const conversationExists =
       await ConversationService.validateConversationExists(conversationId);
     if (!conversationExists) {
-      throw new Error("会话不存在");
+      throw new Error('会话不存在');
     }
 
     return MessageRepository.findByConversationId(conversationId, skip, take);
@@ -62,7 +62,7 @@ export class MessageService {
     const conversationExists =
       await ConversationService.validateConversationExists(conversationId);
     if (!conversationExists) {
-      throw new Error("会话不存在");
+      throw new Error('会话不存在');
     }
 
     return MessageRepository.findLatestByConversationId(conversationId, limit);
@@ -75,7 +75,7 @@ export class MessageService {
     // 检查消息是否存在
     const exists = await MessageRepository.exists(id);
     if (!exists) {
-      throw new Error("消息不存在");
+      throw new Error('消息不存在');
     }
 
     return MessageRepository.update(id, data);
@@ -88,7 +88,7 @@ export class MessageService {
     // 检查消息是否存在
     const exists = await MessageRepository.exists(id);
     if (!exists) {
-      throw new Error("消息不存在");
+      throw new Error('消息不存在');
     }
 
     return MessageRepository.delete(id);
@@ -109,7 +109,7 @@ export class MessageService {
     const conversationExists =
       await ConversationService.validateConversationExists(conversationId);
     if (!conversationExists) {
-      throw new Error("会话不存在");
+      throw new Error('会话不存在');
     }
 
     return MessageRepository.getStats(conversationId);
@@ -120,7 +120,7 @@ export class MessageService {
    */
   static async deleteMessages(messageIds: string[]) {
     if (messageIds.length === 0) {
-      throw new Error("消息ID列表不能为空");
+      throw new Error('消息ID列表不能为空');
     }
 
     return MessageRepository.deleteMany(messageIds);
@@ -134,7 +134,7 @@ export class MessageService {
     const conversationExists =
       await ConversationService.validateConversationExists(conversationId);
     if (!conversationExists) {
-      throw new Error("会话不存在");
+      throw new Error('会话不存在');
     }
 
     return MessageRepository.deleteByConversationId(conversationId);
@@ -153,11 +153,11 @@ export class MessageService {
     const conversationExists =
       await ConversationService.validateConversationExists(conversationId);
     if (!conversationExists) {
-      throw new Error("会话不存在");
+      throw new Error('会话不存在');
     }
 
     if (!searchTerm.trim()) {
-      throw new Error("搜索词不能为空");
+      throw new Error('搜索词不能为空');
     }
 
     return MessageRepository.searchContent(

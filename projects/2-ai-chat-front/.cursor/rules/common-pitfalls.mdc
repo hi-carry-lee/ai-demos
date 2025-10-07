@@ -1,0 +1,391 @@
+---
+description: React + TypeScript 开发中的常见陷阱和错误
+globs: ['**/*.tsx', '**/*.ts', '**/*.jsx', '**/*.js']
+alwaysApply: true
+---
+
+# React + TypeScript 常见陷阱提醒
+
+## React 常见错误
+
+### ❌ 陷阱 1：忘记依赖数组
+
+```typescript
+// ❌ 错误：缺少依赖数组，会导致无限循环
+useEffect(() => {
+  fetchUserData(userId);
+});
+
+// ✅ 正确：添加依赖数组
+useEffect(() => {
+  fetchUserData(userId);
+}, [userId]);
+```
+
+### ❌ 陷阱 2：在 useEffect 中忘记清理
+
+```typescript
+// ❌ 错误：没有清理定时器
+useEffect(() => {
+  const timer = setInterval(() => {
+    console.log('Timer tick');
+  }, 1000);
+  // 忘记清理
+}, []);
+
+// ✅ 正确：清理定时器
+useEffect(() => {
+  const timer = setInterval(() => {
+    console.log('Timer tick');
+  }, 1000);
+
+  return () => clearInterval(timer);
+}, []);
+```
+
+### ❌ 陷阱 3：直接修改状态
+
+```typescript
+// ❌ 错误：直接修改状态
+const [users, setUsers] = useState([]);
+users.push(newUser); // 错误！直接修改状态
+
+// ✅ 正确：使用不可变更新
+setUsers(prevUsers => [...prevUsers, newUser]);
+```
+
+### ❌ 陷阱 4：在渲染中创建对象
+
+```typescript
+// ❌ 错误：每次渲染都创建新对象
+const MyComponent = ({ items }) => {
+  return (
+    <div>
+      {items.map(item => (
+        <ChildComponent
+          key={item.id}
+          config={{ theme: 'dark', size: 'large' }} // 每次都是新对象
+        />
+      ))}
+    </div>
+  );
+};
+
+// ✅ 正确：使用 useMemo 或提取到组件外部
+const CONFIG = { theme: 'dark', size: 'large' };
+
+const MyComponent = ({ items }) => {
+  return (
+    <div>
+      {items.map(item => (
+        <ChildComponent key={item.id} config={CONFIG} />
+      ))}
+    </div>
+  );
+};
+```
+
+### ❌ 陷阱 5：忘记处理异步错误
+
+```typescript
+// ❌ 错误：没有处理异步错误
+const handleSubmit = async () => {
+  const data = await fetchData(); // 可能抛出错误
+  setResult(data);
+};
+
+// ✅ 正确：处理异步错误
+const handleSubmit = async () => {
+  try {
+    const data = await fetchData();
+    setResult(data);
+  } catch (error) {
+    setError(error.message);
+  }
+};
+```
+
+## TypeScript 常见错误
+
+### ❌ 陷阱 6：使用 any 类型
+
+```typescript
+// ❌ 错误：使用 any
+const handleData = (data: any) => {
+  return data.someProperty;
+};
+
+// ✅ 正确：使用具体类型
+interface DataType {
+  someProperty: string;
+}
+
+const handleData = (data: DataType) => {
+  return data.someProperty;
+};
+```
+
+### ❌ 陷阱 7：忘记可选链操作符
+
+```typescript
+// ❌ 错误：可能访问 undefined 的属性
+const userName = user.profile.name;
+
+// ✅ 正确：使用可选链
+const userName = user?.profile?.name;
+```
+
+### ❌ 陷阱 8：类型断言滥用
+
+```typescript
+// ❌ 错误：不安全的类型断言
+const element = document.getElementById('myId') as HTMLInputElement;
+
+// ✅ 正确：类型守卫
+const element = document.getElementById('myId');
+if (element instanceof HTMLInputElement) {
+  // 现在可以安全使用 element
+}
+```
+
+## 状态管理常见错误
+
+### ❌ 陷阱 9：Zustand 状态更新错误
+
+```typescript
+// ❌ 错误：直接修改状态
+const useStore = create(set => ({
+  users: [],
+  addUser: user =>
+    set(state => {
+      state.users.push(user); // 错误！直接修改
+      return state;
+    }),
+}));
+
+// ✅ 正确：返回新状态
+const useStore = create(set => ({
+  users: [],
+  addUser: user =>
+    set(state => ({
+      users: [...state.users, user],
+    })),
+}));
+```
+
+### ❌ 陷阱 10：TanStack Query 缓存键错误
+
+```typescript
+// ❌ 错误：缓存键不一致
+const { data: user1 } = useQuery(['user', userId]);
+const { data: user2 } = useQuery(['users', userId]); // 不同的键
+
+// ✅ 正确：使用一致的缓存键
+const userKeys = {
+  all: ['users'] as const,
+  detail: (id: string) => [...userKeys.all, 'detail', id] as const,
+};
+
+const { data: user1 } = useQuery(userKeys.detail(userId));
+const { data: user2 } = useQuery(userKeys.detail(userId)); // 相同的键
+```
+
+## 表单处理常见错误
+
+### ❌ 陷阱 11：React Hook Form 默认值错误
+
+```typescript
+// ❌ 错误：异步设置默认值
+const MyForm = ({ user }) => {
+  const { register } = useForm({
+    defaultValues: user, // user 可能是 undefined
+  });
+};
+
+// ✅ 正确：处理异步默认值
+const MyForm = ({ user }) => {
+  const { register, reset } = useForm();
+
+  useEffect(() => {
+    if (user) {
+      reset(user);
+    }
+  }, [user, reset]);
+};
+```
+
+### ❌ 陷阱 12：Zod 验证错误处理
+
+```typescript
+// ❌ 错误：没有处理验证错误
+const schema = z.object({
+  email: z.string().email(),
+});
+
+const validateData = data => {
+  return schema.parse(data); // 可能抛出错误
+};
+
+// ✅ 正确：使用 safeParse
+const validateData = data => {
+  const result = schema.safeParse(data);
+  if (!result.success) {
+    console.error('Validation errors:', result.error.errors);
+    return null;
+  }
+  return result.data;
+};
+```
+
+## 性能优化常见错误
+
+### ❌ 陷阱 13：不必要的 useMemo
+
+```typescript
+// ❌ 错误：过度使用 useMemo
+const MyComponent = ({ name }) => {
+  const greeting = useMemo(() => `Hello, ${name}!`, [name]); // 简单的字符串拼接不需要 useMemo
+
+  return <div>{greeting}</div>;
+};
+
+// ✅ 正确：只在必要时使用 useMemo
+const MyComponent = ({ items }) => {
+  const expensiveValue = useMemo(() => {
+    return items.reduce((sum, item) => sum + item.value, 0);
+  }, [items]); // 复杂计算才需要 useMemo
+
+  return <div>{expensiveValue}</div>;
+};
+```
+
+### ❌ 陷阱 14：useCallback 依赖错误
+
+```typescript
+// ❌ 错误：依赖数组不完整
+const MyComponent = ({ userId, onUpdate }) => {
+  const handleClick = useCallback(() => {
+    onUpdate(userId);
+  }, [userId]); // 缺少 onUpdate 依赖
+
+  return <button onClick={handleClick}>Update</button>;
+};
+
+// ✅ 正确：包含所有依赖
+const handleClick = useCallback(() => {
+  onUpdate(userId);
+}, [userId, onUpdate]);
+```
+
+## 样式相关常见错误
+
+### ❌ 陷阱 15：Tailwind 类名冲突
+
+```typescript
+// ❌ 错误：类名冲突
+<div className="p-4 p-6"> // p-6 会覆盖 p-4
+
+// ✅ 正确：使用条件类名
+<div className={cn('p-4', isLarge && 'p-6')}>
+```
+
+### ❌ 陷阱 16：深色模式样式错误
+
+```typescript
+// ❌ 错误：忘记深色模式样式
+<div className="bg-white text-black">
+
+// ✅ 正确：包含深色模式样式
+<div className="bg-white text-black dark:bg-gray-900 dark:text-white">
+```
+
+## 错误处理最佳实践
+
+### ✅ 统一错误处理
+
+```typescript
+// ✅ 创建错误边界
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('Error caught by boundary:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <div>Something went wrong.</div>;
+    }
+
+    return this.props.children;
+  }
+}
+
+// ✅ 使用错误边界
+<ErrorBoundary>
+  <MyComponent />
+</ErrorBoundary>;
+```
+
+### ✅ 异步错误处理
+
+```typescript
+// ✅ 创建错误处理 Hook
+const useAsyncError = () => {
+  const [error, setError] = useState<Error | null>(null);
+
+  const handleError = useCallback((error: Error) => {
+    setError(error);
+    console.error('Async error:', error);
+  }, []);
+
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
+
+  return { error, handleError, clearError };
+};
+```
+
+## 调试技巧
+
+### ✅ 使用 React DevTools
+
+```typescript
+// ✅ 添加调试信息
+const MyComponent = ({ data }) => {
+  console.log('MyComponent render:', { data });
+
+  return <div>{/* 组件内容 */}</div>;
+};
+
+// ✅ 使用 displayName
+MyComponent.displayName = 'MyComponent';
+```
+
+### ✅ 性能调试
+
+```typescript
+// ✅ 使用 React.memo 和调试
+const MyComponent = React.memo(({ data }) => {
+  console.log('MyComponent rendered with:', data);
+  return <div>{data.name}</div>;
+});
+
+MyComponent.displayName = 'MyComponent';
+```
+
+## 预防措施
+
+1. **使用 ESLint 规则**：配置 React 和 TypeScript 相关的 ESLint 规则
+2. **类型检查**：启用严格的 TypeScript 配置
+3. **测试覆盖**：编写单元测试和集成测试
+4. **代码审查**：定期进行代码审查
+5. **性能监控**：使用 React DevTools Profiler 监控性能

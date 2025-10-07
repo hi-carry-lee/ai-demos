@@ -351,15 +351,15 @@ const Conversation = () => {
                       </div>
                       <div className="bg-glass-card rounded-2xl px-4 py-3">
                         <div className="flex space-x-1">
-                          <div className="w-2 h-2 bg-glass-muted rounded-full animate-bounce"></div>
+                          <div className="w-2 h-2 bg-glass-muted rounded-full animate-bo" />
                           <div
                             className="w-2 h-2 bg-glass-muted rounded-full animate-bounce"
                             style={{ animationDelay: '0.1s' }}
-                          ></div>
+                          />
                           <div
                             className="w-2 h-2 bg-glass-muted rounded-full animate-bounce"
                             style={{ animationDelay: '0.2s' }}
-                          ></div>
+                          />
                         </div>
                       </div>
                     </div>

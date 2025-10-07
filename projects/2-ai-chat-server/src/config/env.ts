@@ -1,6 +1,6 @@
-import dotenv from "dotenv";
+import dotenv from 'dotenv';
 // import like this is the recommended way to use zod
-import { z } from "zod";
+import { z } from 'zod';
 
 // 加载.env文件
 dotenv.config();
@@ -9,29 +9,29 @@ dotenv.config();
 const envSchema = z.object({
   PORT: z
     .string()
-    .transform((val) => parseInt(val, 10))
+    .transform(val => parseInt(val, 10))
     .pipe(z.number().min(1).max(65535)),
   NODE_ENV: z
-    .enum(["development", "production", "test"])
-    .default("development"),
+    .enum(['development', 'production', 'test'])
+    .default('development'),
   OPENAI_API_KEY: z.string().optional(),
-  SILICONFLOW_API_KEY: z.string().min(1, "SILICONFLOW_API_KEY is required"),
+  SILICONFLOW_API_KEY: z.string().min(1, 'SILICONFLOW_API_KEY is required'),
   // Add GEMINI_API_KEY if you use it
-  GEMINI_API_KEY: z.string().min(1, "GEMINI_API_KEY is required"),
+  GEMINI_API_KEY: z.string().min(1, 'GEMINI_API_KEY is required'),
   // 数据库配置
-  DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
+  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   // JWT配置
-  JWT_SECRET: z.string().min(1, "JWT_SECRET is required"),
+  JWT_SECRET: z.string().min(1, 'JWT_SECRET is required'),
 });
 
 // Parse and validate environment variables
 const parseResult = envSchema.safeParse(process.env);
 
 if (!parseResult.success) {
-  parseResult.error.errors.forEach((error) => {
-    console.error(`  - ${error.path.join(".")}: ${error.message}`);
+  parseResult.error.errors.forEach(error => {
+    console.error(`  - ${error.path.join('.')}: ${error.message}`);
   });
-  process.exit(1);
+  throw new Error('Environment variables are not valid');
 }
 
 export const env = parseResult.data;

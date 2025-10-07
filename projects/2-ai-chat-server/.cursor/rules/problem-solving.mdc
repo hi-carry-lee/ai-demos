@@ -1,7 +1,6 @@
 ---
 description: 问题解决策略和系统性分析方法
-globs: ["**/*.ts"]
-alwaysApply: true
+alwaysApply: false
 ---
 
 # 问题解决策略

@@ -1,0 +1,573 @@
+---
+description: 表单验证规则 - React Hook Form + Zod 最佳实践
+globs: ['**/*.tsx', '**/*.ts']
+alwaysApply: true
+---
+
+# 表单验证最佳实践
+
+## React Hook Form + Zod 集成
+
+### 1. 基础表单模板
+
+```typescript
+import React from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
+
+// Zod Schema 定义
+const userFormSchema = z.object({
+  name: z
+    .string()
+    .min(2, '姓名至少需要2个字符')
+    .max(50, '姓名不能超过50个字符'),
+  email: z.string().email('请输入有效的邮箱地址').min(1, '邮箱不能为空'),
+  phone: z
+    .string()
+    .regex(/^1[3-9]\d{9}$/, '请输入有效的手机号码')
+    .optional()
+    .or(z.literal('')),
+  age: z
+    .number()
+    .min(18, '年龄不能小于18岁')
+    .max(100, '年龄不能超过100岁')
+    .optional(),
+  agree: z.boolean().refine(val => val === true, '请同意用户协议'),
+});
+
+type UserFormData = z.infer<typeof userFormSchema>;
+
+interface UserFormProps {
+  initialData?: Partial<UserFormData>;
+  onSubmit: (data: UserFormData) => Promise<void>;
+  onCancel?: () => void;
+  submitText?: string;
+}
+
+export const UserForm: React.FC<UserFormProps> = ({
+  initialData,
+  onSubmit,
+  onCancel,
+  submitText = '保存',
+}) => {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting, isValid },
+    reset,
+    watch,
+  } = useForm<UserFormData>({
+    resolver: zodResolver(userFormSchema),
+    defaultValues: {
+      name: '',
+      email: '',
+      phone: '',
+      age: undefined,
+      agree: false,
+      ...initialData,
+    },
+    mode: 'onChange', // 实时验证
+  });
+
+  const handleFormSubmit = async (data: UserFormData) => {
+    try {
+      await onSubmit(data);
+      toast.success('保存成功');
+      reset(); // 重置表单
+    } catch (error) {
+      toast.error('保存失败，请重试');
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+      {/* 姓名 */}
+      <div>
+        <Label htmlFor="name">姓名 *</Label>
+        <Input
+          id="name"
+          {...register('name')}
+          className={errors.name ? 'border-red-500' : ''}
+          placeholder="请输入姓名"
+        />
+        {errors.name && (
+          <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>
+        )}
+      </div>
+
+      {/* 邮箱 */}
+      <div>
+        <Label htmlFor="email">邮箱 *</Label>
+        <Input
+          id="email"
+          type="email"
+          {...register('email')}
+          className={errors.email ? 'border-red-500' : ''}
+          placeholder="请输入邮箱"
+        />
+        {errors.email && (
+          <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
+        )}
+      </div>
+
+      {/* 手机号 */}
+      <div>
+        <Label htmlFor="phone">手机号</Label>
+        <Input
+          id="phone"
+          {...register('phone')}
+          className={errors.phone ? 'border-red-500' : ''}
+          placeholder="请输入手机号"
+        />
+        {errors.phone && (
+          <p className="text-red-500 text-sm mt-1">{errors.phone.message}</p>
+        )}
+      </div>
+
+      {/* 年龄 */}
+      <div>
+        <Label htmlFor="age">年龄</Label>
+        <Input
+          id="age"
+          type="number"
+          {...register('age', { valueAsNumber: true })}
+          className={errors.age ? 'border-red-500' : ''}
+          placeholder="请输入年龄"
+        />
+        {errors.age && (
+          <p className="text-red-500 text-sm mt-1">{errors.age.message}</p>
+        )}
+      </div>
+
+      {/* 同意协议 */}
+      <div className="flex items-center space-x-2">
+        <input
+          id="agree"
+          type="checkbox"
+          {...register('agree')}
+          className="rounded border-gray-300"
+        />
+        <Label htmlFor="agree" className="text-sm">
+          我同意{' '}
+          <a href="#" className="text-blue-600 underline">
+            用户协议
+          </a>
+        </Label>
+      </div>
+      {errors.agree && (
+        <p className="text-red-500 text-sm">{errors.agree.message}</p>
+      )}
+
+      {/* 提交按钮 */}
+      <div className="flex gap-3 pt-4">
+        <Button
+          type="submit"
+          disabled={isSubmitting || !isValid}
+          className="flex-1"
+        >
+          {isSubmitting ? '保存中...' : submitText}
+        </Button>
+        {onCancel && (
+          <Button type="button" variant="outline" onClick={onCancel}>
+            取消
+          </Button>
+        )}
+      </div>
+    </form>
+  );
+};
+```
+
+### 2. 复杂表单验证
+
+```typescript
+// 多步骤表单
+const multiStepSchema = z.object({
+  // 步骤1: 基本信息
+  step1: z.object({
+    name: z.string().min(2, '姓名至少2个字符'),
+    email: z.string().email('请输入有效邮箱'),
+  }),
+  // 步骤2: 详细信息
+  step2: z.object({
+    phone: z.string().regex(/^1[3-9]\d{9}$/, '请输入有效手机号'),
+    address: z.string().min(10, '地址至少10个字符'),
+  }),
+  // 步骤3: 确认信息
+  step3: z.object({
+    agree: z.boolean().refine(val => val === true, '请同意协议'),
+  }),
+});
+
+// 条件验证
+const conditionalSchema = z
+  .object({
+    userType: z.enum(['individual', 'company']),
+    name: z.string().min(2),
+    // 当 userType 为 company 时，companyName 必填
+    companyName: z.string().optional(),
+  })
+  .refine(
+    data => {
+      if (data.userType === 'company') {
+        return data.companyName && data.companyName.length > 0;
+      }
+      return true;
+    },
+    {
+      message: '公司用户必须填写公司名称',
+      path: ['companyName'],
+    }
+  );
+
+// 异步验证
+const asyncValidationSchema = z.object({
+  email: z
+    .string()
+    .email()
+    .refine(async email => {
+      // 异步检查邮箱是否已存在
+      const exists = await checkEmailExists(email);
+      return !exists;
+    }, '该邮箱已被注册'),
+});
+```
+
+### 3. 自定义验证规则
+
+```typescript
+// 自定义验证函数
+const customValidators = {
+  // 密码强度验证
+  strongPassword: z
+    .string()
+    .min(8, '密码至少8位')
+    .regex(/[A-Z]/, '密码必须包含大写字母')
+    .regex(/[a-z]/, '密码必须包含小写字母')
+    .regex(/[0-9]/, '密码必须包含数字')
+    .regex(/[^A-Za-z0-9]/, '密码必须包含特殊字符'),
+
+  // 身份证号验证
+  idCard: z
+    .string()
+    .regex(
+      /^[1-9]\d{5}(18|19|20)\d{2}((0[1-9])|(1[0-2]))(([0-2][1-9])|10|20|30|31)\d{3}[0-9Xx]$/,
+      '请输入有效的身份证号'
+    ),
+
+  // 银行卡号验证
+  bankCard: z.string().regex(/^[1-9]\d{15,18}$/, '请输入有效的银行卡号'),
+
+  // 中文姓名验证
+  chineseName: z
+    .string()
+    .regex(/^[\u4e00-\u9fa5]{2,4}$/, '请输入2-4位中文姓名'),
+
+  // 文件大小验证
+  fileSize: (maxSizeMB: number) =>
+    z
+      .instanceof(File)
+      .refine(
+        file => file.size <= maxSizeMB * 1024 * 1024,
+        `文件大小不能超过${maxSizeMB}MB`
+      ),
+
+  // 文件类型验证
+  fileType: (allowedTypes: string[]) =>
+    z
+      .instanceof(File)
+      .refine(
+        file => allowedTypes.includes(file.type),
+        `只支持 ${allowedTypes.join(', ')} 格式的文件`
+      ),
+};
+
+// 使用示例
+const fileUploadSchema = z.object({
+  avatar: z
+    .instanceof(File)
+    .refine(file => file.size <= 5 * 1024 * 1024, '头像大小不能超过5MB')
+    .refine(
+      file => ['image/jpeg', 'image/png', 'image/gif'].includes(file.type),
+      '只支持 JPG、PNG、GIF 格式的图片'
+    ),
+});
+```
+
+### 4. 表单组件库
+
+```typescript
+// components/forms/FormField.tsx
+import React from 'react';
+import { useFormContext } from 'react-hook-form';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
+interface FormFieldProps {
+  name: string;
+  label: string;
+  type?: 'text' | 'email' | 'password' | 'number' | 'textarea' | 'select';
+  placeholder?: string;
+  options?: { value: string; label: string }[];
+  required?: boolean;
+  className?: string;
+}
+
+export const FormField: React.FC<FormFieldProps> = ({
+  name,
+  label,
+  type = 'text',
+  placeholder,
+  options,
+  required = false,
+  className,
+}) => {
+  const {
+    register,
+    formState: { errors },
+    setValue,
+    watch,
+  } = useFormContext();
+
+  const error = errors[name];
+  const value = watch(name);
+
+  const renderInput = () => {
+    switch (type) {
+      case 'textarea':
+        return (
+          <Textarea
+            {...register(name)}
+            placeholder={placeholder}
+            className={error ? 'border-red-500' : ''}
+          />
+        );
+
+      case 'select':
+        return (
+          <Select value={value} onValueChange={val => setValue(name, val)}>
+            <SelectTrigger className={error ? 'border-red-500' : ''}>
+              <SelectValue placeholder={placeholder} />
+            </SelectTrigger>
+            <SelectContent>
+              {options?.map(option => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        );
+
+      default:
+        return (
+          <Input
+            type={type}
+            {...register(name)}
+            placeholder={placeholder}
+            className={error ? 'border-red-500' : ''}
+          />
+        );
+    }
+  };
+
+  return (
+    <div className={className}>
+      <Label htmlFor={name}>
+        {label}
+        {required && <span className="text-red-500 ml-1">*</span>}
+      </Label>
+      {renderInput()}
+      {error && (
+        <p className="text-red-500 text-sm mt-1">{error.message as string}</p>
+      )}
+    </div>
+  );
+};
+
+// 使用示例
+export const UserFormWithComponents: React.FC = () => {
+  const methods = useForm<UserFormData>({
+    resolver: zodResolver(userFormSchema),
+  });
+
+  return (
+    <FormProvider {...methods}>
+      <form onSubmit={methods.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          name="name"
+          label="姓名"
+          type="text"
+          placeholder="请输入姓名"
+          required
+        />
+
+        <FormField
+          name="email"
+          label="邮箱"
+          type="email"
+          placeholder="请输入邮箱"
+          required
+        />
+
+        <FormField
+          name="role"
+          label="角色"
+          type="select"
+          options={[
+            { value: 'admin', label: '管理员' },
+            { value: 'user', label: '普通用户' },
+          ]}
+          placeholder="请选择角色"
+        />
+
+        <FormField
+          name="description"
+          label="描述"
+          type="textarea"
+          placeholder="请输入描述"
+        />
+      </form>
+    </FormProvider>
+  );
+};
+```
+
+### 5. 表单状态管理
+
+```typescript
+// hooks/useFormState.ts
+import { useState, useCallback } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+
+interface UseFormStateOptions<T> {
+  schema: z.ZodSchema<T>;
+  defaultValues?: Partial<T>;
+  onSubmit: (data: T) => Promise<void>;
+  onSuccess?: () => void;
+  onError?: (error: Error) => void;
+}
+
+export const useFormState = <T>({
+  schema,
+  defaultValues,
+  onSubmit,
+  onSuccess,
+  onError,
+}: UseFormStateOptions<T>) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const methods = useForm<T>({
+    resolver: zodResolver(schema),
+    defaultValues: defaultValues as any,
+    mode: 'onChange',
+  });
+
+  const handleSubmit = useCallback(
+    async (data: T) => {
+      try {
+        setIsSubmitting(true);
+        setSubmitError(null);
+        await onSubmit(data);
+        onSuccess?.();
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : '提交失败';
+        setSubmitError(errorMessage);
+        onError?.(error instanceof Error ? error : new Error(errorMessage));
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [onSubmit, onSuccess, onError]
+  );
+
+  const reset = useCallback(() => {
+    methods.reset();
+    setSubmitError(null);
+  }, [methods]);
+
+  return {
+    ...methods,
+    isSubmitting,
+    submitError,
+    handleSubmit: methods.handleSubmit(handleSubmit),
+    reset,
+  };
+};
+```
+
+## 表单验证最佳实践
+
+### 1. 验证策略
+
+```typescript
+// ✅ 实时验证（推荐用于简单表单）
+mode: 'onChange';
+
+// ✅ 失焦验证（推荐用于复杂表单）
+mode: 'onBlur';
+
+// ✅ 提交时验证（推荐用于性能敏感场景）
+mode: 'onSubmit';
+```
+
+### 2. 错误处理
+
+```typescript
+// ✅ 统一的错误处理
+const handleFormError = (error: FieldErrors) => {
+  const firstError = Object.values(error)[0];
+  if (firstError?.message) {
+    toast.error(firstError.message);
+  }
+};
+
+// ✅ 自定义错误消息
+const customErrorMessages = {
+  required: '此字段为必填项',
+  email: '请输入有效的邮箱地址',
+  min: '输入值过短',
+  max: '输入值过长',
+};
+```
+
+### 3. 性能优化
+
+```typescript
+// ✅ 使用 useMemo 优化 schema
+const schema = useMemo(
+  () =>
+    z.object({
+      // schema 定义
+    }),
+  [dependencies]
+);
+
+// ✅ 使用 useCallback 优化提交函数
+const onSubmit = useCallback(
+  async (data: FormData) => {
+    // 提交逻辑
+  },
+  [dependencies]
+);
+
+// ✅ 条件渲染减少不必要的验证
+const shouldValidate = watch('userType') === 'company';
+```

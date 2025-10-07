@@ -1,7 +1,6 @@
 ---
 description: ExpressJS + TypeScript + Prisma 项目概览和工作原则
-globs: ["**/*.ts", "**/*.js", "**/*.json"]
-alwaysApply: true
+alwaysApply: false
 ---
 
 # ExpressJS + TypeScript + Prisma 开发规范（中小型项目）

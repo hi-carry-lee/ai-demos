@@ -1,17 +1,17 @@
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import { UserService } from "./user.service.js";
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { env } from '../config/env.js';
+import { UserRepository } from '../repositories/user.repository.js';
 import type {
   LoginUserData,
   RegisterUserData,
   AuthResult,
-} from "../types/database.js";
-import { UserRepository } from "../repositories/user.repository.js";
+} from '../types/database.js';
+import { UserService } from './user.service.js';
 
 export class AuthService {
-  private static readonly JWT_SECRET =
-    process.env.JWT_SECRET || "your-secret-key";
-  private static readonly JWT_EXPIRES_IN = "7d";
+  private static readonly JWT_SECRET = env.JWT_SECRET;
+  private static readonly JWT_EXPIRES_IN = '7d';
   private static readonly SALT_ROUNDS = 12;
 
   /**
@@ -44,10 +44,10 @@ export class AuthService {
         token,
       };
     } catch (error) {
-      console.error("注册失败:", error);
+      console.error('注册失败:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : "注册失败，请稍后重试",
+        error: error instanceof Error ? error.message : '注册失败，请稍后重试',
       };
     }
   }
@@ -62,7 +62,7 @@ export class AuthService {
       if (!user) {
         return {
           success: false,
-          error: "邮箱或密码错误",
+          error: '邮箱或密码错误',
         };
       }
 
@@ -74,7 +74,7 @@ export class AuthService {
       if (!isPasswordValid) {
         return {
           success: false,
-          error: "邮箱或密码错误",
+          error: '邮箱或密码错误',
         };
       }
 
@@ -93,10 +93,10 @@ export class AuthService {
         token,
       };
     } catch (error) {
-      console.error("登录失败:", error);
+      console.error('登录失败:', error);
       return {
         success: false,
-        error: "登录失败，请稍后重试",
+        error: '登录失败，请稍后重试',
       };
     }
   }
@@ -115,7 +115,7 @@ export class AuthService {
       if (!userExists) {
         return {
           success: false,
-          error: "用户不存在",
+          error: '用户不存在',
         };
       }
 
@@ -127,18 +127,18 @@ export class AuthService {
       if (error instanceof jwt.JsonWebTokenError) {
         return {
           success: false,
-          error: "无效的token",
+          error: '无效的token',
         };
       }
       if (error instanceof jwt.TokenExpiredError) {
         return {
           success: false,
-          error: "token已过期",
+          error: 'token已过期',
         };
       }
       return {
         success: false,
-        error: "token验证失败",
+        error: 'token验证失败',
       };
     }
   }
@@ -155,7 +155,7 @@ export class AuthService {
       if (!userExists) {
         return {
           success: false,
-          error: "用户不存在",
+          error: '用户不存在',
         };
       }
 
@@ -167,10 +167,10 @@ export class AuthService {
         token,
       };
     } catch (error) {
-      console.error("刷新token失败:", error);
+      console.error('刷新token失败:', error);
       return {
         success: false,
-        error: "刷新token失败",
+        error: '刷新token失败',
       };
     }
   }
@@ -192,11 +192,11 @@ export class AuthService {
       return null;
     }
 
-    const parts = authHeader.split(" ");
-    if (parts.length !== 2 || parts[0] !== "Bearer") {
+    const parts = authHeader.split(' ');
+    if (parts.length !== 2 || parts[0] !== 'Bearer') {
       return null;
     }
 
-    return parts[1] || null;
+    return parts[1] ?? null;
   }
 }

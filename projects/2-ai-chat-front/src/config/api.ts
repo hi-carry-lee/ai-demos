@@ -1,5 +1,3 @@
-// client/src/api/client.ts
-
 // ============ 1. 环境变量获取 ============
 // Vite 通过 import.meta.env 暴露环境变量（必须以 VITE_ 开头）
 // 开发环境：/api（由 Vite proxy 代理到 http://localhost:3000/api）

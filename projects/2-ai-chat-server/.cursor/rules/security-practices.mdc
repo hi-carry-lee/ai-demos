@@ -1,7 +1,6 @@
 ---
 description: 安全最佳实践 - 密码处理、JWT 使用、HTTP 状态码
-globs: ["**/*.ts"]
-alwaysApply: true
+alwaysApply: false
 ---
 
 # 安全最佳实践
@@ -9,7 +8,7 @@ alwaysApply: true
 ## 1. 密码处理
 
 ```typescript
-import bcrypt from "bcrypt";
+import bcrypt from 'bcrypt';
 
 // 加密（12 rounds）
 const hashed = await bcrypt.hash(password, 12);
@@ -21,7 +20,7 @@ const isValid = await bcrypt.compare(password, hashedPassword);
 ## 2. JWT 使用
 
 ```typescript
-import jwt from "jsonwebtoken";
+import jwt from 'jsonwebtoken';
 
 // 生成 token
 const token = jwt.sign({ id, email }, env.JWT_SECRET, {
@@ -54,12 +53,12 @@ const decoded = jwt.verify(token, env.JWT_SECRET);
 
 ```typescript
 // ✅ 正确：友好的提示
-throw new AppError("该邮箱已被注册，请使用其他邮箱", 409);
-throw new AppError("用户不存在", 404);
+throw new AppError('该邮箱已被注册，请使用其他邮箱', 409);
+throw new AppError('用户不存在', 404);
 
 // ❌ 错误：技术性提示
-throw new AppError("Unique constraint violation on email", 409);
-throw new AppError("User not found in database", 404);
+throw new AppError('Unique constraint violation on email', 409);
+throw new AppError('User not found in database', 404);
 ```
 
 #### 2️⃣ 预期内的业务错误
@@ -70,13 +69,13 @@ throw new AppError("User not found in database", 404);
 // ✅ 正确：预期内的错误
 const user = await userRepository.findByEmail(email);
 if (!user) {
-  throw new AppError("用户不存在", 404); // 不需要 console.error
+  throw new AppError('用户不存在', 404); // 不需要 console.error
 }
 
 // ✅ 正确：密码错误（预期内）
 const isValid = await bcrypt.compare(password, user.password);
 if (!isValid) {
-  throw new AppError("密码错误", 401);
+  throw new AppError('密码错误', 401);
 }
 ```
 
@@ -88,11 +87,11 @@ if (!isValid) {
 // ✅ 正确：在 errorHandler 中处理
 export const errorHandler = (err, req, res, next) => {
   // 记录错误（包括堆栈）
-  console.error("Error:", err);
+  console.error('Error:', err);
 
   // 生产环境不暴露细节
   const message =
-    env.NODE_ENV === "production" ? "Internal server error" : err.message;
+    env.NODE_ENV === 'production' ? 'Internal server error' : err.message;
 
   ApiResponse.error(res, message, 500);
 };
@@ -107,8 +106,8 @@ export const errorHandler = (err, req, res, next) => {
 try {
   await emailService.send(to, subject, body);
 } catch (error) {
-  console.error("Email service error:", error); // 记录原始错误
-  throw new AppError("发送邮件失败，请稍后重试", 500); // 友好提示
+  console.error('Email service error:', error); // 记录原始错误
+  throw new AppError('发送邮件失败，请稍后重试', 500); // 友好提示
 }
 ```
 
@@ -127,8 +126,8 @@ try {
 throw new AppError(`Database connection failed: ${DATABASE_URL}`, 500);
 
 // ✅ 正确：隐藏细节
-console.error("Database connection failed:", error); // 只在服务端日志
-throw new AppError("数据库连接失败", 500); // 用户看到的
+console.error('Database connection failed:', error); // 只在服务端日志
+throw new AppError('数据库连接失败', 500); // 用户看到的
 ```
 
 ## 注意事项

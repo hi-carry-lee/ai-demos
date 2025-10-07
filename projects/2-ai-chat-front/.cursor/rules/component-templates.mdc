@@ -1,0 +1,461 @@
+---
+description: React 组件开发模板和最佳实践
+globs: ['**/*.tsx', '**/*.jsx']
+alwaysApply: true
+---
+
+# React 组件开发模板
+
+## 基础组件模板
+
+### 1. 简单 UI 组件
+
+```typescript
+import React from 'react';
+import { cn } from '@/lib/utils';
+
+interface CardProps {
+  children: React.ReactNode;
+  className?: string;
+  variant?: 'default' | 'outlined' | 'elevated';
+}
+
+export const Card: React.FC<CardProps> = ({
+  children,
+  className,
+  variant = 'default',
+}) => {
+  const variantClasses = {
+    default: 'bg-white border border-gray-200',
+    outlined: 'border-2 border-gray-300',
+    elevated: 'shadow-lg bg-white',
+  };
+
+  return (
+    <div className={cn('rounded-lg p-4', variantClasses[variant], className)}>
+      {children}
+    </div>
+  );
+};
+```
+
+### 2. 带状态的业务组件
+
+```typescript
+import React, { useState, useEffect, useCallback } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { toast } from 'sonner';
+import { useUserData } from '@/hooks/useUserData';
+import { User } from '@/types/user';
+
+interface UserCardProps {
+  userId: string;
+  onEdit?: (user: User) => void;
+  onDelete?: (userId: string) => void;
+  className?: string;
+}
+
+export const UserCard: React.FC<UserCardProps> = ({
+  userId,
+  onEdit,
+  onDelete,
+  className,
+}) => {
+  const { user, isLoading, error, refetch } = useUserData(userId);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleEdit = useCallback(() => {
+    if (user && onEdit) {
+      onEdit(user);
+    }
+  }, [user, onEdit]);
+
+  const handleDelete = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      setIsDeleting(true);
+      await userService.deleteUser(userId);
+      toast.success('用户删除成功');
+      onDelete?.(userId);
+    } catch (error) {
+      toast.error('删除失败，请重试');
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [user, userId, onDelete]);
+
+  if (isLoading) {
+    return (
+      <Card className={className}>
+        <div className="animate-pulse">
+          <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+        </div>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className={className}>
+        <div className="text-red-500 text-center">
+          <p>加载失败: {error}</p>
+          <Button variant="outline" onClick={refetch} className="mt-2">
+            重试
+          </Button>
+        </div>
+      </Card>
+    );
+  }
+
+  if (!user) {
+    return (
+      <Card className={className}>
+        <div className="text-gray-500 text-center">用户不存在</div>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className={className}>
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-semibold text-lg">{user.name}</h3>
+          <p className="text-gray-600">{user.email}</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleEdit}>
+            编辑
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={handleDelete}
+            disabled={isDeleting}
+          >
+            {isDeleting ? '删除中...' : '删除'}
+          </Button>
+        </div>
+      </div>
+    </Card>
+  );
+};
+```
+
+### 3. 表单组件
+
+```typescript
+import React from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
+
+const userSchema = z.object({
+  name: z.string().min(2, '姓名至少2个字符'),
+  email: z.string().email('请输入有效的邮箱地址'),
+  phone: z.string().optional(),
+});
+
+type UserFormData = z.infer<typeof userSchema>;
+
+interface UserFormProps {
+  initialData?: Partial<UserFormData>;
+  onSubmit: (data: UserFormData) => Promise<void>;
+  onCancel?: () => void;
+  submitText?: string;
+}
+
+export const UserForm: React.FC<UserFormProps> = ({
+  initialData,
+  onSubmit,
+  onCancel,
+  submitText = '保存',
+}) => {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<UserFormData>({
+    resolver: zodResolver(userSchema),
+    defaultValues: initialData,
+  });
+
+  const handleFormSubmit = async (data: UserFormData) => {
+    try {
+      await onSubmit(data);
+      toast.success('保存成功');
+    } catch (error) {
+      toast.error('保存失败，请重试');
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
+      <div>
+        <Label htmlFor="name">姓名</Label>
+        <Input
+          id="name"
+          {...register('name')}
+          className={errors.name ? 'border-red-500' : ''}
+        />
+        {errors.name && (
+          <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>
+        )}
+      </div>
+
+      <div>
+        <Label htmlFor="email">邮箱</Label>
+        <Input
+          id="email"
+          type="email"
+          {...register('email')}
+          className={errors.email ? 'border-red-500' : ''}
+        />
+        {errors.email && (
+          <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
+        )}
+      </div>
+
+      <div>
+        <Label htmlFor="phone">电话（可选）</Label>
+        <Input
+          id="phone"
+          {...register('phone')}
+          className={errors.phone ? 'border-red-500' : ''}
+        />
+        {errors.phone && (
+          <p className="text-red-500 text-sm mt-1">{errors.phone.message}</p>
+        )}
+      </div>
+
+      <div className="flex gap-2 pt-4">
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? '保存中...' : submitText}
+        </Button>
+        {onCancel && (
+          <Button type="button" variant="outline" onClick={onCancel}>
+            取消
+          </Button>
+        )}
+      </div>
+    </form>
+  );
+};
+```
+
+## 自定义 Hook 模板
+
+### 1. 数据获取 Hook
+
+```typescript
+import { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
+
+interface UseApiOptions<T> {
+  initialData?: T;
+  onSuccess?: (data: T) => void;
+  onError?: (error: Error) => void;
+}
+
+export const useApi = <T>(
+  apiCall: () => Promise<T>,
+  options: UseApiOptions<T> = {}
+) => {
+  const [data, setData] = useState<T | undefined>(options.initialData);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const execute = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const result = await apiCall();
+      setData(result);
+      options.onSuccess?.(result);
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error('Unknown error');
+      setError(error);
+      options.onError?.(error);
+      toast.error(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [apiCall, options]);
+
+  useEffect(() => {
+    execute();
+  }, [execute]);
+
+  return {
+    data,
+    isLoading,
+    error,
+    refetch: execute,
+  };
+};
+```
+
+### 2. 本地存储 Hook
+
+```typescript
+import { useState, useEffect, useCallback } from 'react';
+
+export const useLocalStorage = <T>(
+  key: string,
+  initialValue: T
+): [T, (value: T) => void, () => void] => {
+  const [storedValue, setStoredValue] = useState<T>(() => {
+    try {
+      const item = window.localStorage.getItem(key);
+      return item ? JSON.parse(item) : initialValue;
+    } catch (error) {
+      console.error(`Error reading localStorage key "${key}":`, error);
+      return initialValue;
+    }
+  });
+
+  const setValue = useCallback(
+    (value: T) => {
+      try {
+        setStoredValue(value);
+        window.localStorage.setItem(key, JSON.stringify(value));
+      } catch (error) {
+        console.error(`Error setting localStorage key "${key}":`, error);
+      }
+    },
+    [key]
+  );
+
+  const removeValue = useCallback(() => {
+    try {
+      setStoredValue(initialValue);
+      window.localStorage.removeItem(key);
+    } catch (error) {
+      console.error(`Error removing localStorage key "${key}":`, error);
+    }
+  }, [key, initialValue]);
+
+  return [storedValue, setValue, removeValue];
+};
+```
+
+## 组件开发最佳实践
+
+### 1. 组件拆分原则
+
+- **单一职责**：每个组件只负责一个功能
+- **可复用性**：提取公共逻辑到自定义 Hook
+- **可组合性**：使用 children 或 render props 模式
+
+### 2. 性能优化
+
+```typescript
+// ✅ 使用 React.memo 优化纯组件
+export const UserAvatar = React.memo<UserAvatarProps>(
+  ({ user, size = 'md' }) => {
+    return (
+      <div className={`avatar avatar-${size}`}>
+        <img src={user.avatar} alt={user.name} />
+      </div>
+    );
+  }
+);
+
+// ✅ 使用 useMemo 优化计算
+const expensiveValue = useMemo(() => {
+  return heavyCalculation(data);
+}, [data]);
+
+// ✅ 使用 useCallback 优化事件处理
+const handleClick = useCallback(() => {
+  onItemClick(item.id);
+}, [item.id, onItemClick]);
+```
+
+### 3. 错误边界
+
+```typescript
+import React, { Component, ReactNode } from 'react';
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error?: Error;
+}
+
+interface ErrorBoundaryProps {
+  children: ReactNode;
+  fallback?: ReactNode;
+}
+
+export class ErrorBoundary extends Component<
+  ErrorBoundaryProps,
+  ErrorBoundaryState
+> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('ErrorBoundary caught an error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        this.props.fallback || (
+          <div className="error-boundary">
+            <h2>出现了一些问题</h2>
+            <p>请刷新页面重试</p>
+          </div>
+        )
+      );
+    }
+
+    return this.props.children;
+  }
+}
+```
+
+## 组件测试模板
+
+```typescript
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { UserCard } from './UserCard';
+
+describe('UserCard', () => {
+  const mockUser = {
+    id: '1',
+    name: 'John Doe',
+    email: 'john@example.com',
+  };
+
+  it('renders user information correctly', () => {
+    render(<UserCard userId="1" />);
+
+    expect(screen.getByText('John Doe')).toBeInTheDocument();
+    expect(screen.getByText('john@example.com')).toBeInTheDocument();
+  });
+
+  it('calls onEdit when edit button is clicked', async () => {
+    const mockOnEdit = jest.fn();
+    render(<UserCard userId="1" onEdit={mockOnEdit} />);
+
+    const editButton = screen.getByText('编辑');
+    fireEvent.click(editButton);
+
+    await waitFor(() => {
+      expect(mockOnEdit).toHaveBeenCalledWith(mockUser);
+    });
+  });
+});
+```

@@ -1,8 +1,8 @@
-import { prisma } from "../lib/prisma.js";
+import { prisma } from '../lib/prisma.js';
 import type {
   CreateConversationData,
   UpdateConversationData,
-} from "../types/database.js";
+} from '../types/database.js';
 
 export class ConversationRepository {
   /**
@@ -14,7 +14,7 @@ export class ConversationRepository {
         userId: data.userId,
         title: data.title,
         model: data.model,
-        status: data.status || "active",
+        status: data.status ?? 'active',
       },
     });
   }
@@ -28,7 +28,7 @@ export class ConversationRepository {
       include: {
         user: true,
         messages: {
-          orderBy: { createdAt: "asc" },
+          orderBy: { createdAt: 'asc' },
         },
       },
     });
@@ -45,15 +45,15 @@ export class ConversationRepository {
     return prisma.conversation.findMany({
       where: {
         userId,
-        status: "active",
+        status: 'active',
       },
       include: {
         messages: {
           take: 1,
-          orderBy: { createdAt: "desc" },
+          orderBy: { createdAt: 'desc' },
         },
       },
-      orderBy: { updatedAt: "desc" },
+      orderBy: { updatedAt: 'desc' },
       skip,
       take,
     });
@@ -79,7 +79,7 @@ export class ConversationRepository {
   static async delete(id: string) {
     return prisma.conversation.update({
       where: { id },
-      data: { status: "deleted" },
+      data: { status: 'deleted' },
     });
   }
 
@@ -89,7 +89,7 @@ export class ConversationRepository {
   static async archive(id: string) {
     return prisma.conversation.update({
       where: { id },
-      data: { status: "archived" },
+      data: { status: 'archived' },
     });
   }
 

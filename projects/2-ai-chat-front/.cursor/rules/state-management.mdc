@@ -1,0 +1,519 @@
+---
+description: 状态管理规则 - Zustand + TanStack Query 最佳实践
+globs: ['**/*.tsx', '**/*.ts']
+alwaysApply: true
+---
+
+# 状态管理最佳实践
+
+## 状态管理策略
+
+### 1. 状态分类
+
+- **服务器状态**: 使用 TanStack Query 管理
+- **客户端状态**: 使用 Zustand 管理
+- **表单状态**: 使用 React Hook Form 管理
+- **UI 状态**: 使用 useState 或 Zustand 管理
+
+### 2. 状态选择原则
+
+```typescript
+// ✅ 服务器状态 - 使用 TanStack Query
+const {
+  data: users,
+  isLoading,
+  error,
+} = useQuery({
+  queryKey: ['users'],
+  queryFn: fetchUsers,
+});
+
+// ✅ 全局客户端状态 - 使用 Zustand
+const { user, setUser, logout } = useAuthStore();
+
+// ✅ 表单状态 - 使用 React Hook Form
+const { register, handleSubmit, formState } = useForm();
+
+// ✅ 局部 UI 状态 - 使用 useState
+const [isOpen, setIsOpen] = useState(false);
+```
+
+## Zustand 状态管理
+
+### 1. Store 结构模板
+
+```typescript
+// stores/auth.store.ts
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import { User } from '@/types/user';
+
+interface AuthState {
+  user: User | null;
+  token: string | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+}
+
+interface AuthActions {
+  setUser: (user: User) => void;
+  setToken: (token: string) => void;
+  login: (user: User, token: string) => void;
+  logout: () => void;
+  setLoading: (loading: boolean) => void;
+}
+
+type AuthStore = AuthState & AuthActions;
+
+export const useAuthStore = create<AuthStore>()(
+  persist(
+    (set, get) => ({
+      // 初始状态
+      user: null,
+      token: null,
+      isAuthenticated: false,
+      isLoading: false,
+
+      // Actions
+      setUser: user => set({ user }),
+
+      setToken: token => set({ token }),
+
+      login: (user, token) =>
+        set({
+          user,
+          token,
+          isAuthenticated: true,
+        }),
+
+      logout: () =>
+        set({
+          user: null,
+          token: null,
+          isAuthenticated: false,
+        }),
+
+      setLoading: isLoading => set({ isLoading }),
+    }),
+    {
+      name: 'auth-storage',
+      partialize: state => ({
+        user: state.user,
+        token: state.token,
+        isAuthenticated: state.isAuthenticated,
+      }),
+    }
+  )
+);
+```
+
+### 2. 复杂状态管理
+
+```typescript
+// stores/ui.store.ts
+import { create } from 'zustand';
+import { devtools } from 'zustand/middleware';
+
+interface UIState {
+  theme: 'light' | 'dark' | 'system';
+  sidebarOpen: boolean;
+  notifications: Notification[];
+  modals: Record<string, boolean>;
+}
+
+interface UIActions {
+  setTheme: (theme: 'light' | 'dark' | 'system') => void;
+  toggleSidebar: () => void;
+  addNotification: (notification: Omit<Notification, 'id'>) => void;
+  removeNotification: (id: string) => void;
+  openModal: (modalId: string) => void;
+  closeModal: (modalId: string) => void;
+  closeAllModals: () => void;
+}
+
+type UIStore = UIState & UIActions;
+
+export const useUIStore = create<UIStore>()(
+  devtools(
+    (set, get) => ({
+      // 初始状态
+      theme: 'system',
+      sidebarOpen: false,
+      notifications: [],
+      modals: {},
+
+      // Actions
+      setTheme: theme => set({ theme }),
+
+      toggleSidebar: () =>
+        set(state => ({
+          sidebarOpen: !state.sidebarOpen,
+        })),
+
+      addNotification: notification =>
+        set(state => ({
+          notifications: [
+            ...state.notifications,
+            { ...notification, id: Date.now().toString() },
+          ],
+        })),
+
+      removeNotification: id =>
+        set(state => ({
+          notifications: state.notifications.filter(n => n.id !== id),
+        })),
+
+      openModal: modalId =>
+        set(state => ({
+          modals: { ...state.modals, [modalId]: true },
+        })),
+
+      closeModal: modalId =>
+        set(state => ({
+          modals: { ...state.modals, [modalId]: false },
+        })),
+
+      closeAllModals: () => set({ modals: {} }),
+    }),
+    { name: 'ui-store' }
+  )
+);
+```
+
+### 3. 异步 Actions
+
+```typescript
+// stores/user.store.ts
+import { create } from 'zustand';
+import { userService } from '@/services/user.service';
+import { User } from '@/types/user';
+
+interface UserState {
+  users: User[];
+  selectedUser: User | null;
+  isLoading: boolean;
+  error: string | null;
+}
+
+interface UserActions {
+  fetchUsers: () => Promise<void>;
+  createUser: (userData: CreateUserData) => Promise<void>;
+  updateUser: (id: string, userData: UpdateUserData) => Promise<void>;
+  deleteUser: (id: string) => Promise<void>;
+  selectUser: (user: User | null) => void;
+  clearError: () => void;
+}
+
+type UserStore = UserState & UserActions;
+
+export const useUserStore = create<UserStore>((set, get) => ({
+  // 初始状态
+  users: [],
+  selectedUser: null,
+  isLoading: false,
+  error: null,
+
+  // Actions
+  fetchUsers: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const users = await userService.getUsers();
+      set({ users, isLoading: false });
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : 'Failed to fetch users',
+        isLoading: false,
+      });
+    }
+  },
+
+  createUser: async userData => {
+    set({ isLoading: true, error: null });
+    try {
+      const newUser = await userService.createUser(userData);
+      set(state => ({
+        users: [...state.users, newUser],
+        isLoading: false,
+      }));
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : 'Failed to create user',
+        isLoading: false,
+      });
+    }
+  },
+
+  updateUser: async (id, userData) => {
+    set({ isLoading: true, error: null });
+    try {
+      const updatedUser = await userService.updateUser(id, userData);
+      set(state => ({
+        users: state.users.map(user => (user.id === id ? updatedUser : user)),
+        selectedUser:
+          state.selectedUser?.id === id ? updatedUser : state.selectedUser,
+        isLoading: false,
+      }));
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : 'Failed to update user',
+        isLoading: false,
+      });
+    }
+  },
+
+  deleteUser: async id => {
+    set({ isLoading: true, error: null });
+    try {
+      await userService.deleteUser(id);
+      set(state => ({
+        users: state.users.filter(user => user.id !== id),
+        selectedUser: state.selectedUser?.id === id ? null : state.selectedUser,
+        isLoading: false,
+      }));
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : 'Failed to delete user',
+        isLoading: false,
+      });
+    }
+  },
+
+  selectUser: user => set({ selectedUser: user }),
+
+  clearError: () => set({ error: null }),
+}));
+```
+
+## TanStack Query 数据管理
+
+### 1. Query 配置模板
+
+```typescript
+// hooks/useUsers.ts
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { userService } from '@/services/user.service';
+import { User, CreateUserData, UpdateUserData } from '@/types/user';
+
+// Query Keys
+export const userKeys = {
+  all: ['users'] as const,
+  lists: () => [...userKeys.all, 'list'] as const,
+  list: (filters: string) => [...userKeys.lists(), { filters }] as const,
+  details: () => [...userKeys.all, 'detail'] as const,
+  detail: (id: string) => [...userKeys.details(), id] as const,
+};
+
+// 获取用户列表
+export const useUsers = (filters?: string) => {
+  return useQuery({
+    queryKey: userKeys.list(filters || ''),
+    queryFn: () => userService.getUsers(filters),
+    staleTime: 5 * 60 * 1000, // 5分钟
+    gcTime: 10 * 60 * 1000, // 10分钟
+  });
+};
+
+// 获取单个用户
+export const useUser = (id: string) => {
+  return useQuery({
+    queryKey: userKeys.detail(id),
+    queryFn: () => userService.getUser(id),
+    enabled: !!id,
+  });
+};
+
+// 创建用户
+export const useCreateUser = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (userData: CreateUserData) => userService.createUser(userData),
+    onSuccess: newUser => {
+      // 更新用户列表缓存
+      queryClient.setQueryData(userKeys.lists(), (old: User[] | undefined) => {
+        return old ? [...old, newUser] : [newUser];
+      });
+
+      // 或者重新获取用户列表
+      queryClient.invalidateQueries({ queryKey: userKeys.lists() });
+    },
+    onError: error => {
+      console.error('Failed to create user:', error);
+    },
+  });
+};
+
+// 更新用户
+export const useUpdateUser = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateUserData }) =>
+      userService.updateUser(id, data),
+    onSuccess: updatedUser => {
+      // 更新单个用户缓存
+      queryClient.setQueryData(userKeys.detail(updatedUser.id), updatedUser);
+
+      // 更新用户列表缓存
+      queryClient.setQueryData(userKeys.lists(), (old: User[] | undefined) => {
+        return old?.map(user =>
+          user.id === updatedUser.id ? updatedUser : user
+        );
+      });
+    },
+  });
+};
+
+// 删除用户
+export const useDeleteUser = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => userService.deleteUser(id),
+    onSuccess: (_, deletedId) => {
+      // 从缓存中移除用户
+      queryClient.removeQueries({ queryKey: userKeys.detail(deletedId) });
+
+      // 更新用户列表缓存
+      queryClient.setQueryData(userKeys.lists(), (old: User[] | undefined) => {
+        return old?.filter(user => user.id !== deletedId);
+      });
+    },
+  });
+};
+```
+
+### 2. 乐观更新
+
+```typescript
+// hooks/useOptimisticUser.ts
+export const useOptimisticUpdateUser = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateUserData }) =>
+      userService.updateUser(id, data),
+
+    // 乐观更新
+    onMutate: async ({ id, data }) => {
+      // 取消正在进行的查询
+      await queryClient.cancelQueries({ queryKey: userKeys.detail(id) });
+
+      // 保存当前数据
+      const previousUser = queryClient.getQueryData(userKeys.detail(id));
+
+      // 乐观更新
+      queryClient.setQueryData(userKeys.detail(id), (old: User | undefined) => {
+        return old ? { ...old, ...data } : undefined;
+      });
+
+      // 返回回滚函数
+      return { previousUser };
+    },
+
+    // 如果失败，回滚
+    onError: (err, variables, context) => {
+      if (context?.previousUser) {
+        queryClient.setQueryData(
+          userKeys.detail(variables.id),
+          context.previousUser
+        );
+      }
+    },
+
+    // 无论成功失败，都重新获取数据
+    onSettled: (data, error, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: userKeys.detail(variables.id),
+      });
+    },
+  });
+};
+```
+
+### 3. 无限滚动
+
+```typescript
+// hooks/useInfiniteUsers.ts
+export const useInfiniteUsers = (filters?: string) => {
+  return useInfiniteQuery({
+    queryKey: userKeys.list(filters || ''),
+    queryFn: ({ pageParam = 1 }) =>
+      userService.getUsers({
+        page: pageParam,
+        limit: 20,
+        filters,
+      }),
+    getNextPageParam: (lastPage, pages) => {
+      return lastPage.hasMore ? pages.length + 1 : undefined;
+    },
+    initialPageParam: 1,
+  });
+};
+```
+
+## 状态管理最佳实践
+
+### 1. 状态选择指南
+
+```typescript
+// ✅ 使用 TanStack Query 的场景
+- 服务器数据获取
+- 缓存管理
+- 后台同步
+- 乐观更新
+
+// ✅ 使用 Zustand 的场景
+- 全局 UI 状态
+- 用户偏好设置
+- 认证状态
+- 购物车状态
+
+// ✅ 使用 useState 的场景
+- 组件内部状态
+- 表单输入状态
+- 临时 UI 状态
+```
+
+### 2. 性能优化
+
+```typescript
+// ✅ 使用 select 优化 Zustand
+const userName = useAuthStore(state => state.user?.name);
+
+// ✅ 使用 shallow 比较
+import { shallow } from 'zustand/shallow';
+const { user, setUser } = useAuthStore(
+  state => ({ user: state.user, setUser: state.setUser }),
+  shallow
+);
+
+// ✅ 合理设置 TanStack Query 缓存时间
+const { data } = useQuery({
+  queryKey: ['users'],
+  queryFn: fetchUsers,
+  staleTime: 5 * 60 * 1000, // 5分钟内不重新获取
+  gcTime: 10 * 60 * 1000, // 10分钟后清理缓存
+});
+```
+
+### 3. 错误处理
+
+```typescript
+// ✅ 统一的错误处理
+const useErrorHandler = () => {
+  const { addNotification } = useUIStore();
+
+  return useCallback(
+    (error: Error) => {
+      console.error('Error:', error);
+      addNotification({
+        type: 'error',
+        title: '操作失败',
+        message: error.message,
+      });
+    },
+    [addNotification]
+  );
+};
+```

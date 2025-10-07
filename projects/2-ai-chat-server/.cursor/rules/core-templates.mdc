@@ -1,7 +1,6 @@
 ---
 description: 核心模板代码 - ApiResponse, AppError, asyncHandler 等
-globs: ["**/*.ts"]
-alwaysApply: true
+alwaysApply: false
 ---
 
 # 核心模板代码（使用以下模板保持一致性）
@@ -9,7 +8,7 @@ alwaysApply: true
 ## 统一响应格式 - shared/utils/apiResponse.ts
 
 ```typescript
-import { Response } from "express";
+import { Response } from 'express';
 
 interface SuccessResponse<T> {
   success: true;
@@ -34,7 +33,7 @@ export class ApiResponse {
   static success<T>(
     res: Response,
     data: T,
-    message: string = "Success",
+    message: string = 'Success',
     statusCode: number = 200
   ): void {
     res.status(statusCode).json({
@@ -70,10 +69,10 @@ export class ApiResponse {
 
 ```typescript
 // 成功响应
-ApiResponse.success(res, user, "User created successfully", 201);
+ApiResponse.success(res, user, 'User created successfully', 201);
 
 // 错误响应（在 errorHandler 中使用）
-ApiResponse.error(res, "User not found", 404);
+ApiResponse.error(res, 'User not found', 404);
 ```
 
 ## 自定义错误类 - shared/errors/AppError.ts
@@ -100,15 +99,15 @@ export class AppError extends Error {
 **使用方式：**
 
 ```typescript
-throw new AppError("User not found", 404);
-throw new AppError("Email already exists", 409);
-throw new AppError("Validation failed", 400, validationErrors);
+throw new AppError('User not found', 404);
+throw new AppError('Email already exists', 409);
+throw new AppError('Validation failed', 400, validationErrors);
 ```
 
 ## 异步错误处理 - shared/utils/asyncHandler.ts
 
 ```typescript
-import { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction } from 'express';
 
 type AsyncFunction = (
   req: Request,
@@ -132,6 +131,6 @@ export const asyncHandler = (fn: AsyncFunction) => {
 // 在 Controller 中使用
 createUser = asyncHandler(async (req, res, next) => {
   const user = await userService.createUser(req.body);
-  ApiResponse.success(res, user, "User created successfully", 201);
+  ApiResponse.success(res, user, 'User created successfully', 201);
 });
 ```

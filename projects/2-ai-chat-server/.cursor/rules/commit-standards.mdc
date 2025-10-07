@@ -1,6 +1,5 @@
 ---
 description: 提交规范和版本控制最佳实践
-globs: ["**/*"]
 alwaysApply: false
 ---
 

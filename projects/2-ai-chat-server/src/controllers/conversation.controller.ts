@@ -1,11 +1,12 @@
-import type { Request, Response } from "express";
-import { ConversationService } from "../services/conversation.service.js";
+import type { Request, Response } from 'express';
 import {
   createConversationSchema,
   updateConversationSchema,
   paginationQuerySchema,
   conversationIdParamSchema,
-} from "../lib/validations.js";
+} from '../lib/validations.js';
+import { ConversationService } from '../services/conversation.service.js';
+import type { UpdateConversationData } from '../types/database.js';
 
 export class ConversationController {
   /**
@@ -19,38 +20,37 @@ export class ConversationController {
       if (!validationResult.success) {
         return res.status(400).json({
           success: false,
-          error: "请求数据验证失败",
-          details: validationResult.error.errors.map((err) => ({
-            field: err.path.join("."),
+          error: '请求数据验证失败',
+          details: validationResult.error.errors.map(err => ({
+            field: err.path.join('.'),
             message: err.message,
           })),
         });
       }
 
       const { title, model } = validationResult.data;
-      const userId = (req as any).userId; // 从中间件获取，可能为undefined（匿名用户）
+      const userId = req.userId; // 从中间件获取，可能为undefined（匿名用户）
 
       const conversationData = {
-        userId: userId,
+        userId,
         title,
         model,
       };
 
-      const conversation = await ConversationService.createConversation(
-        conversationData
-      );
+      const conversation =
+        await ConversationService.createConversation(conversationData);
 
       res.status(201).json({
         success: true,
-        message: "会话创建成功",
+        message: '会话创建成功',
         data: { conversation },
       });
       return;
     } catch (error) {
-      console.error("创建会话控制器错误:", error);
+      console.error('创建会话控制器错误:', error);
       res.status(500).json({
         success: false,
-        error: "服务器内部错误",
+        error: '服务器内部错误',
       });
       return;
     }
@@ -67,15 +67,15 @@ export class ConversationController {
       if (!queryValidation.success) {
         return res.status(400).json({
           success: false,
-          error: "查询参数验证失败",
-          details: queryValidation.error.errors.map((err) => ({
-            field: err.path.join("."),
+          error: '查询参数验证失败',
+          details: queryValidation.error.errors.map(err => ({
+            field: err.path.join('.'),
             message: err.message,
           })),
         });
       }
 
-      const userId = (req as any).userId; // 从中间件获取
+      const userId = req.userId; // 从中间件获取
       const { page, limit } = queryValidation.data;
       const skip = (page - 1) * limit;
 
@@ -98,10 +98,10 @@ export class ConversationController {
       });
       return;
     } catch (error) {
-      console.error("获取用户会话控制器错误:", error);
+      console.error('获取用户会话控制器错误:', error);
       res.status(500).json({
         success: false,
-        error: "服务器内部错误",
+        error: '服务器内部错误',
       });
       return;
     }
@@ -118,23 +118,22 @@ export class ConversationController {
       if (!paramValidation.success) {
         return res.status(400).json({
           success: false,
-          error: "路径参数验证失败",
-          details: paramValidation.error.errors.map((err) => ({
-            field: err.path.join("."),
+          error: '路径参数验证失败',
+          details: paramValidation.error.errors.map(err => ({
+            field: err.path.join('.'),
             message: err.message,
           })),
         });
       }
 
       const { id } = paramValidation.data;
-      // const userId = (req as any).userId; // 从中间件获取（暂时未使用）
 
       const conversation = await ConversationService.findConversationById(id);
 
       if (!conversation) {
         return res.status(404).json({
           success: false,
-          error: "会话不存在",
+          error: '会话不存在',
         });
       }
 
@@ -144,10 +143,10 @@ export class ConversationController {
       });
       return;
     } catch (error) {
-      console.error("获取会话详情控制器错误:", error);
+      console.error('获取会话详情控制器错误:', error);
       res.status(500).json({
         success: false,
-        error: "服务器内部错误",
+        error: '服务器内部错误',
       });
       return;
     }
@@ -164,9 +163,9 @@ export class ConversationController {
       if (!paramValidation.success) {
         return res.status(400).json({
           success: false,
-          error: "路径参数验证失败",
-          details: paramValidation.error.errors.map((err) => ({
-            field: err.path.join("."),
+          error: '路径参数验证失败',
+          details: paramValidation.error.errors.map(err => ({
+            field: err.path.join('.'),
             message: err.message,
           })),
         });
@@ -178,9 +177,9 @@ export class ConversationController {
       if (!bodyValidation.success) {
         return res.status(400).json({
           success: false,
-          error: "请求数据验证失败",
-          details: bodyValidation.error.errors.map((err) => ({
-            field: err.path.join("."),
+          error: '请求数据验证失败',
+          details: bodyValidation.error.errors.map(err => ({
+            field: err.path.join('.'),
             message: err.message,
           })),
         });
@@ -188,7 +187,7 @@ export class ConversationController {
 
       const { id } = paramValidation.data;
       const { title, status, model } = bodyValidation.data;
-      const userId = (req as any).userId;
+      const userId = req.userId;
 
       // 检查会话是否存在
       const existingConversation =
@@ -196,7 +195,7 @@ export class ConversationController {
       if (!existingConversation) {
         return res.status(404).json({
           success: false,
-          error: "会话不存在",
+          error: '会话不存在',
         });
       }
 
@@ -207,11 +206,11 @@ export class ConversationController {
       ) {
         return res.status(403).json({
           success: false,
-          error: "无权修改此会话",
+          error: '无权修改此会话',
         });
       }
 
-      const updateData: any = {};
+      const updateData: UpdateConversationData = {};
       if (title) updateData.title = title;
       if (status) updateData.status = status;
       if (model) updateData.model = model;
@@ -223,15 +222,15 @@ export class ConversationController {
 
       res.json({
         success: true,
-        message: "会话更新成功",
+        message: '会话更新成功',
         data: { conversation: updatedConversation },
       });
       return;
     } catch (error) {
-      console.error("更新会话控制器错误:", error);
+      console.error('更新会话控制器错误:', error);
       res.status(500).json({
         success: false,
-        error: "服务器内部错误",
+        error: '服务器内部错误',
       });
       return;
     }
@@ -245,7 +244,7 @@ export class ConversationController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          error: "会话id不能为空",
+          error: '会话id不能为空',
         });
       }
 
@@ -254,21 +253,21 @@ export class ConversationController {
       if (!existingConversation) {
         return res.status(404).json({
           success: false,
-          error: "会话不存在",
+          error: '会话不存在',
         });
       }
 
       await ConversationService.deleteConversation(id);
       res.json({
         success: true,
-        message: "会话删除成功",
+        message: '会话删除成功',
       });
       return;
     } catch (error) {
-      console.error("删除会话控制器错误:", error);
+      console.error('删除会话控制器错误:', error);
       res.status(500).json({
         success: false,
-        error: "服务器内部错误",
+        error: '服务器内部错误',
       });
       return;
     }

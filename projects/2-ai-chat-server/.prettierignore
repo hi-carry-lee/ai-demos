@@ -1,0 +1,11 @@
+node_modules/
+dist/
+build/
+coverage/
+*.config.js
+*.config.mjs
+prisma/migrations/
+.env*
+pnpm-lock.yaml
+package-lock.json
+yarn.lock

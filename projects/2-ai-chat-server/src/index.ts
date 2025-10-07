@@ -1,8 +1,8 @@
-import express from "express";
-import { env } from "./config/env.js"; // 注意：ESM需要.js后缀
-import { errorHandler } from "./middleware/errorHandler.js";
-import routes from "./routes/index.js";
-import cors from "cors";
+import cors from 'cors';
+import express from 'express';
+import { env } from './config/env.js'; // 注意：ESM需要.js后缀
+import { errorHandler } from './middleware/errorHandler.js';
+import routes from './routes/index.js';
 
 // 创建Express应用
 const app = express();
@@ -12,8 +12,8 @@ const app = express();
 app.use(
   cors({
     origin:
-      process.env.NODE_ENV === "production"
-        ? ["https://your-frontend-domain.com"]
+      process.env.NODE_ENV === 'production'
+        ? ['https://your-frontend-domain.com']
         : true,
     credentials: true,
   })
@@ -26,13 +26,13 @@ app.use(express.urlencoded({ extended: true }));
 
 // ========== 路由 ==========
 // API路由（所有路由前缀/api）
-app.use("/api", routes);
+app.use('/api', routes);
 
 // 根路径健康检查
-app.get("/", (_req: express.Request, res: express.Response) => {
+app.get('/', (_req: express.Request, res: express.Response) => {
   res.json({
-    message: "Server is running",
-    version: "1.0.0",
+    message: 'Server is running',
+    version: '1.0.0',
   });
 });
 

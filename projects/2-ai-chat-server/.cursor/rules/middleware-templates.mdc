@@ -1,6 +1,4 @@
 ---
-description: 中间件模板 - 错误处理、验证、认证、日志等
-globs: ["**/middlewares/**/*.ts", "**/*.middleware.ts"]
 alwaysApply: true
 ---
 
@@ -9,10 +7,10 @@ alwaysApply: true
 ## 错误处理中间件 - shared/middlewares/errorHandler.middleware.ts
 
 ```typescript
-import { Request, Response, NextFunction } from "express";
-import { AppError } from "@/shared/errors/AppError";
-import { Prisma } from "@prisma/client";
-import { ApiResponse } from "@/shared/utils/apiResponse";
+import { Request, Response, NextFunction } from 'express';
+import { AppError } from '@/shared/errors/AppError';
+import { Prisma } from '@prisma/client';
+import { ApiResponse } from '@/shared/utils/apiResponse';
 
 /**
  * 全局错误处理中间件
@@ -25,7 +23,7 @@ export const errorHandler = (
   next: NextFunction
 ): void => {
   // 记录错误
-  console.error("Error:", err);
+  console.error('Error:', err);
 
   // 1. 自定义应用错误
   if (err instanceof AppError) {
@@ -36,28 +34,28 @@ export const errorHandler = (
   // 2. Prisma 错误处理
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
     // P2002: 唯一约束冲突
-    if (err.code === "P2002") {
-      ApiResponse.error(res, "Resource already exists", 409);
+    if (err.code === 'P2002') {
+      ApiResponse.error(res, 'Resource already exists', 409);
       return;
     }
     // P2025: 记录不存在
-    if (err.code === "P2025") {
-      ApiResponse.error(res, "Resource not found", 404);
+    if (err.code === 'P2025') {
+      ApiResponse.error(res, 'Resource not found', 404);
       return;
     }
   }
 
   // 3. Zod 验证错误（虽然应该在 validate 中间件处理，但作为后备）
-  if (err.name === "ZodError") {
-    ApiResponse.error(res, "Validation failed", 400);
+  if (err.name === 'ZodError') {
+    ApiResponse.error(res, 'Validation failed', 400);
     return;
   }
 
   // 4. 默认服务器错误
   ApiResponse.error(
     res,
-    process.env.NODE_ENV === "production"
-      ? "Internal server error"
+    process.env.NODE_ENV === 'production'
+      ? 'Internal server error'
       : err.message,
     500
   );
@@ -67,9 +65,9 @@ export const errorHandler = (
 ## 验证中间件 - shared/middlewares/validate.middleware.ts
 
 ```typescript
-import { Request, Response, NextFunction } from "express";
-import { AnyZodObject, ZodError } from "zod";
-import { AppError } from "@/shared/errors/AppError";
+import { Request, Response, NextFunction } from 'express';
+import { AnyZodObject, ZodError } from 'zod';
+import { AppError } from '@/shared/errors/AppError';
 
 /**
  * Zod 验证中间件
@@ -90,11 +88,11 @@ export const validate = (schema: AnyZodObject) => {
       next();
     } catch (error) {
       if (error instanceof ZodError) {
-        const errors = error.errors.map((e) => ({
-          path: e.path.join("."),
+        const errors = error.errors.map(e => ({
+          path: e.path.join('.'),
           message: e.message,
         }));
-        next(new AppError("Validation failed", 400, errors));
+        next(new AppError('Validation failed', 400, errors));
       } else {
         next(error);
       }
@@ -106,10 +104,10 @@ export const validate = (schema: AnyZodObject) => {
 ## 认证中间件 - shared/middlewares/auth.middleware.ts
 
 ```typescript
-import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
-import { AppError } from "@/shared/errors/AppError";
-import { env } from "@/config/env";
+import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
+import { AppError } from '@/shared/errors/AppError';
+import { env } from '@/config/env';
 
 // 扩展 Express Request 类型
 declare global {
@@ -137,8 +135,8 @@ export const authenticate = async (
     // 1. 获取 token
     const authHeader = req.headers.authorization;
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      throw new AppError("Authentication required", 401);
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new AppError('Authentication required', 401);
     }
 
     const token = authHeader.substring(7); // 移除 "Bearer " 前缀
@@ -156,9 +154,9 @@ export const authenticate = async (
     next();
   } catch (error) {
     if (error instanceof jwt.JsonWebTokenError) {
-      next(new AppError("Invalid token", 401));
+      next(new AppError('Invalid token', 401));
     } else if (error instanceof jwt.TokenExpiredError) {
-      next(new AppError("Token expired", 401));
+      next(new AppError('Token expired', 401));
     } else {
       next(error);
     }
@@ -176,7 +174,7 @@ export const optionalAuth = async (
 ): Promise<void> => {
   try {
     const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith("Bearer ")) {
+    if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
       const decoded = jwt.verify(token, env.JWT_SECRET) as any;
       req.user = decoded;
@@ -193,7 +191,7 @@ export const optionalAuth = async (
 ## 请求日志中间件 - shared/middlewares/logger.middleware.ts
 
 ```typescript
-import { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction } from 'express';
 
 /**
  * 请求日志中间件
@@ -207,7 +205,7 @@ export const requestLogger = (
   const startTime = Date.now();
 
   // 监听响应完成
-  res.on("finish", () => {
+  res.on('finish', () => {
     const duration = Date.now() - startTime;
     const { method, originalUrl } = req;
     const { statusCode } = res;
@@ -224,8 +222,8 @@ export const requestLogger = (
 ## 404 处理中间件 - shared/middlewares/notFound.middleware.ts
 
 ```typescript
-import { Request, Response, NextFunction } from "express";
-import { AppError } from "@/shared/errors/AppError";
+import { Request, Response, NextFunction } from 'express';
+import { AppError } from '@/shared/errors/AppError';
 
 /**
  * 404 处理中间件
@@ -243,7 +241,7 @@ export const notFound = (
 ## 限流中间件 - shared/middlewares/rateLimiter.middleware.ts
 
 ```typescript
-import rateLimit from "express-rate-limit";
+import rateLimit from 'express-rate-limit';
 
 /**
  * 全局限流配置
@@ -252,7 +250,7 @@ import rateLimit from "express-rate-limit";
 export const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 分钟
   max: 100, // 最多 100 次请求
-  message: "Too many requests from this IP, please try again later",
+  message: 'Too many requests from this IP, please try again later',
   standardHeaders: true, // 返回 RateLimit-* headers
   legacyHeaders: false,
 });
@@ -264,7 +262,7 @@ export const globalLimiter = rateLimit({
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
-  message: "Too many login attempts, please try again later",
+  message: 'Too many login attempts, please try again later',
   skipSuccessfulRequests: true, // 成功的请求不计数
 });
 ```
